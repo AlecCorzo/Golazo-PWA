@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#00c853">
+  <title>CanCha — Inicio</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body class="app-shell">
+<div id="toast-container"></div>
+
+<!-- Contenido -->
+<div class="page-content fade-in">
+
+  <!-- Saludo -->
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem;">
+    <div>
+      <p class="text-hint">¡Hola,</p>
+      <h2 id="usuario-nombre" style="font-size:1.8rem;">Cargando...</h2>
+    </div>
+    <a href="/pages/perfil.html">
+      <div class="avatar" id="usuario-avatar" style="width:48px; height:48px; font-size:1.1rem;">--</div>
+    </a>
+  </div>
+
+  <!-- Acciones rápidas -->
+  <div class="grid-2" style="margin-bottom:1.5rem;">
+    <a href="/pages/canchas.html">
+      <button class="btn btn-primary" style="height:64px; flex-direction:column; gap:4px; font-size:0.75rem;">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="10" cy="10" r="8"/><path d="M5 10h10M10 5v10"/></svg>
+        Reservar cancha
+      </button>
+    </a>
+    <a href="/pages/equipo.html">
+      <button class="btn btn-secondary" style="height:64px; flex-direction:column; gap:4px; font-size:0.75rem;">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M13 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM4 18v-1a5 5 0 0 1 10 0v1"/><path d="M17 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM19 17v-1a3 3 0 0 0-2-2.8"/></svg>
+        Mi equipo
+      </button>
+    </a>
+  </div>
+
+  <!-- Estado online/offline -->
+  <div id="offline-banner" class="hidden" style="background:rgba(255,193,7,0.12); border:1px solid rgba(255,193,7,0.3); border-radius:var(--radio-sm); padding:10px 14px; margin-bottom:1rem; display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--amarillo);">
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l18 18M9.17 4.27A8 8 0 0 1 17.8 13M6.35 6.35A8 8 0 0 0 2 12"/><circle cx="10" cy="16" r="1" fill="currentColor"/></svg>
+    Sin conexión — Mostrando datos guardados
+  </div>
+
+  <!-- Próximas reservas -->
+  <div style="margin-bottom:1.5rem;">
+    <p class="section-title">Próximos partidos</p>
+    <div id="lista-reservas">
+      <div style="display:flex; align-items:center; gap:10px; padding:1rem 0;">
+        <div class="spinner" style="width:20px; height:20px; border-width:2px;"></div>
+        <span class="text-hint text-sm">Cargando reservas...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Canchas sugeridas -->
+  <div>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+      <p class="section-title" style="margin-bottom:0;">Canchas cercanas</p>
+      <a href="/pages/canchas.html" style="font-size:0.8rem; color:var(--verde); font-weight:600;">Ver todas →</a>
+    </div>
+    <div id="lista-canchas-sugeridas">
+      <div style="display:flex; align-items:center; gap:10px; padding:1rem 0;">
+        <div class="spinner" style="width:20px; height:20px; border-width:2px;"></div>
+        <span class="text-hint">Buscando canchas...</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <a href="/pages/home.html" class="nav-item active">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Inicio
+  </a>
+  <a href="/pages/canchas.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M5 12h14M12 5v14"/></svg>
+    Canchas
+  </a>
+  <a href="/pages/equipo.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Equipo
+  </a>
+  <a href="/pages/perfil.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Perfil
+  </a>
+</nav>
+
+<script type="module">
+  import { requiereAuth } from '/js/auth.js';
+  import { usuarioStorage, reservasDB, canchasDB } from '/js/db.js';
+  import { mostrarToast, formatearFecha, formatearHora, formatearPrecio, iniciales } from '/js/app.js';
+  import { initDB } from '/js/db.js';
+  import { pedirPermisoNotificaciones } from '/js/notificaciones.js';
+
+  await initDB();
+  if (!requiereAuth()) throw new Error('No autenticado');
+
+  const usuario = usuarioStorage.obtener();
+
+  // ─── UI usuario ─────────────────────────────────────
+  document.getElementById('usuario-nombre').textContent = usuario.nombre.split(' ')[0];
+  document.getElementById('usuario-avatar').textContent = iniciales(usuario.nombre);
+
+  // ─── Offline banner ──────────────────────────────────
+  if (!navigator.onLine) {
+    document.getElementById('offline-banner').classList.remove('hidden');
+  }
+  window.addEventListener('online',  () => document.getElementById('offline-banner').classList.add('hidden'));
+  window.addEventListener('offline', () => document.getElementById('offline-banner').classList.remove('hidden'));
+
+  // ─── Pedir permiso notificaciones ────────────────────
+  await pedirPermisoNotificaciones();
+
+  // ─── Cargar reservas ─────────────────────────────────
+  async function cargarReservas() {
+    const todas = await reservasDB.obtenerPorUsuario(usuario.id);
+    const proximas = todas
+      .filter(r => new Date(r.fechaHora) >= new Date() && r.estado !== 'cancelada')
+      .sort((a, b) => new Date(a.fechaHora) - new Date(b.fechaHora))
+      .slice(0, 3);
+
+    const lista = document.getElementById('lista-reservas');
+
+    if (proximas.length === 0) {
+      lista.innerHTML = `
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          <h3>Sin partidos próximos</h3>
+          <p>Reservá una cancha y organizá tu equipo.</p>
+          <a href="/pages/canchas.html"><button class="btn btn-primary btn-sm mt-2" style="width:auto;">Reservar ahora</button></a>
+        </div>`;
+      return;
+    }
+
+    lista.innerHTML = proximas.map(r => `
+      <a href="/pages/reserva.html?id=${r.id}">
+        <div class="reserva-card card-clickable" style="margin-bottom:10px;">
+          <div class="reserva-header">
+            <div>
+              <div class="reserva-cancha">${r.canchaNombre}</div>
+              <div class="reserva-fecha">${formatearFecha(r.fechaHora)} · ${formatearHora(r.fechaHora)}</div>
+            </div>
+            <span class="badge ${r.estado === 'confirmada' ? 'badge-verde' : 'badge-amarillo'}">${r.estado}</span>
+          </div>
+          <div class="reserva-meta">
+            <div class="reserva-meta-item">
+              <span>Duración</span><span>${r.duracion}h</span>
+            </div>
+            <div class="reserva-meta-item">
+              <span>Precio</span><span class="text-verde">${formatearPrecio(r.precio)}</span>
+            </div>
+            <div class="reserva-meta-item">
+              <span>Jugadores</span><span>${r.jugadores?.length || 1}/${r.maxJugadores || 10}</span>
+            </div>
+          </div>
+        </div>
+      </a>
+    `).join('');
+  }
+
+  // ─── Cargar canchas sugeridas ─────────────────────────
+  async function cargarCanchasSugeridas() {
+    const canchas = await canchasDB.obtenerTodas();
+    const disponibles = canchas.filter(c => c.disponible).slice(0, 2);
+    const lista = document.getElementById('lista-canchas-sugeridas');
+
+    if (disponibles.length === 0) {
+      lista.innerHTML = `<p class="text-hint" style="padding:1rem 0;">No hay canchas disponibles.</p>`;
+      return;
+    }
+
+    lista.innerHTML = disponibles.map(c => `
+      <a href="/pages/canchas.html?id=${c.id}">
+        <div class="cancha-card" style="margin-bottom:10px;">
+          <div class="cancha-img">
+            <div class="cancha-img-placeholder">⚽</div>
+            <div class="cancha-disponible-badge">
+              <span class="badge badge-verde">Disponible</span>
+            </div>
+          </div>
+          <div class="cancha-info">
+            <div class="cancha-nombre">${c.nombre}</div>
+            <div class="cancha-meta">
+              <div class="cancha-meta-item">
+                <svg viewBox="0 0 20 20"><path d="M10 2a6 6 0 0 1 6 6c0 5-6 12-6 12S4 13 4 8a6 6 0 0 1 6-6z"/><circle cx="10" cy="8" r="2"/></svg>
+                ${c.direccion}
+              </div>
+              <div class="cancha-precio">${formatearPrecio(c.precioPorHora)}/h</div>
+            </div>
+          </div>
+        </div>
+      </a>
+    `).join('');
+  }
+
+  cargarReservas();
+  cargarCanchasSugeridas();
+</script>
+</body>
+</html>

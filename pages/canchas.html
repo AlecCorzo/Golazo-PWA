@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#00c853">
+  <title>CanCha — Canchas</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <!-- Leaflet para el mapa -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    .filtro-btn { padding:8px 16px; border-radius:99px; font-size:0.8rem; font-weight:600; border:1px solid var(--borde); background:var(--fondo-card); color:var(--texto-sub); transition:all 0.2s; cursor:pointer; white-space:nowrap; }
+    .filtro-btn.active { background:var(--verde-glow); border-color:var(--verde); color:var(--verde); }
+  </style>
+</head>
+<body class="app-shell">
+<div id="toast-container"></div>
+
+<div class="page-header">
+  <h2>Canchas</h2>
+</div>
+
+<div class="page-content fade-in" style="padding-top:0.75rem;">
+
+  <!-- Buscador -->
+  <div style="position:relative; margin-bottom:1rem;">
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="var(--texto-hint)" stroke-width="2"
+      style="position:absolute; left:14px; top:50%; transform:translateY(-50%); pointer-events:none;">
+      <circle cx="9" cy="9" r="6"/><path d="M20 20l-4-4"/>
+    </svg>
+    <input type="search" id="buscador" class="form-input" placeholder="Buscar cancha o barrio..."
+      style="padding-left:40px;">
+  </div>
+
+  <!-- Filtros -->
+  <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:1rem; scrollbar-width:none;">
+    <button class="filtro-btn active" data-filtro="todas">Todas</button>
+    <button class="filtro-btn" data-filtro="disponibles">Disponibles</button>
+    <button class="filtro-btn" data-filtro="4g">Sintético 4G</button>
+    <button class="filtro-btn" data-filtro="3g">Sintético 3G</button>
+  </div>
+
+  <!-- Mapa -->
+  <div id="mapa" style="margin-bottom:1rem;"></div>
+
+  <!-- Lista de canchas -->
+  <p class="section-title">Lista de canchas</p>
+  <div id="lista-canchas"></div>
+
+</div>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <a href="/pages/home.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Inicio
+  </a>
+  <a href="/pages/canchas.html" class="nav-item active">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M5 12h14M12 5v14"/></svg>
+    Canchas
+  </a>
+  <a href="/pages/equipo.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Equipo
+  </a>
+  <a href="/pages/perfil.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Perfil
+  </a>
+</nav>
+
+<script type="module">
+  import { requiereAuth } from '/js/auth.js';
+  import { canchasDB } from '/js/db.js';
+  import { initDB } from '/js/db.js';
+  import { inicializarMapa, marcarUsuario, mostrarCanchasEnMapa, obtenerUbicacion, calcularDistancia } from '/js/geolocalizacion.js';
+  import { mostrarToast, formatearPrecio } from '/js/app.js';
+
+  await initDB();
+  if (!requiereAuth()) throw new Error('No autenticado');
+
+  let todasLasCanchas = [];
+  let filtroActivo = 'todas';
+  let busqueda = '';
+
+  // ─── Inicializar mapa ────────────────────────────────
+  const mapa = inicializarMapa('mapa');
+
+  // Obtener ubicación del usuario
+  try {
+    const pos = await obtenerUbicacion();
+    marcarUsuario(mapa, pos.lat, pos.lng);
+    mapa.setView([pos.lat, pos.lng], 14);
+  } catch (err) {
+    mostrarToast(err.message, 'info');
+  }
+
+  // ─── Cargar canchas ──────────────────────────────────
+  todasLasCanchas = await canchasDB.obtenerTodas();
+
+  mostrarCanchasEnMapa(mapa, todasLasCanchas, (cancha) => {
+    window.location.href = `/pages/reserva.html?canchaId=${cancha.id}`;
+  });
+
+  renderizarLista();
+
+  // ─── Renderizar lista ─────────────────────────────────
+  function renderizarLista() {
+    let canchas = [...todasLasCanchas];
+
+    // Filtro activo
+    if (filtroActivo === 'disponibles') canchas = canchas.filter(c => c.disponible);
+    if (filtroActivo === '4g') canchas = canchas.filter(c => c.superficie.includes('4G'));
+    if (filtroActivo === '3g') canchas = canchas.filter(c => c.superficie.includes('3G'));
+
+    // Búsqueda
+    if (busqueda) {
+      const q = busqueda.toLowerCase();
+      canchas = canchas.filter(c =>
+        c.nombre.toLowerCase().includes(q) || c.direccion.toLowerCase().includes(q)
+      );
+    }
+
+    const lista = document.getElementById('lista-canchas');
+
+    if (canchas.length === 0) {
+      lista.innerHTML = `
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          <h3>Sin resultados</h3>
+          <p>Intentá con otro filtro o búsqueda.</p>
+        </div>`;
+      return;
+    }
+
+    lista.innerHTML = canchas.map(c => `
+      <a href="/pages/reserva.html?canchaId=${c.id}">
+        <div class="cancha-card" style="margin-bottom:12px;">
+          <div class="cancha-img">
+            <div class="cancha-img-placeholder">⚽</div>
+            <div class="cancha-disponible-badge">
+              <span class="badge ${c.disponible ? 'badge-verde' : 'badge-rojo'}">
+                ${c.disponible ? 'Disponible' : 'Ocupada'}
+              </span>
+            </div>
+          </div>
+          <div class="cancha-info">
+            <div class="cancha-nombre">${c.nombre}</div>
+            <div style="display:flex; align-items:center; gap:6px; margin:4px 0;">
+              <span style="color:var(--amarillo); font-size:0.85rem;">★ ${c.calificacion}</span>
+              <span class="badge badge-gris">${c.superficie}</span>
+              <span class="badge badge-gris">${c.capacidad} jugadores</span>
+            </div>
+            <div class="cancha-meta">
+              <div class="cancha-meta-item">
+                <svg viewBox="0 0 20 20"><path d="M10 2a6 6 0 0 1 6 6c0 5-6 12-6 12S4 13 4 8a6 6 0 0 1 6-6z"/><circle cx="10" cy="8" r="2"/></svg>
+                ${c.direccion}
+              </div>
+              <div class="cancha-precio">${formatearPrecio(c.precioPorHora)}/h</div>
+            </div>
+          </div>
+        </div>
+      </a>
+    `).join('');
+  }
+
+  // ─── Buscador ────────────────────────────────────────
+  document.getElementById('buscador').addEventListener('input', (e) => {
+    busqueda = e.target.value;
+    renderizarLista();
+  });
+
+  // ─── Filtros ─────────────────────────────────────────
+  document.querySelectorAll('.filtro-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filtroActivo = btn.dataset.filtro;
+      renderizarLista();
+    });
+  });
+</script>
+</body>
+</html>

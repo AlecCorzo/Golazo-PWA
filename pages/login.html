@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#00c853">
+  <title>CanCha — Ingresá</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+<div id="toast-container"></div>
+
+<div class="page-content" style="display:flex; flex-direction:column; justify-content:center; min-height:100vh; padding-top:2rem;">
+
+  <!-- Logo -->
+  <div class="text-center mb-4" style="margin-bottom:2.5rem;">
+    <div style="font-family:var(--font-display); font-size:3rem; font-weight:800; color:var(--verde); letter-spacing:0.05em;">CANCHA</div>
+    <p class="text-hint" style="margin-top:6px;">Reservá · Jugá · Ganala</p>
+  </div>
+
+  <!-- Tabs login / registro -->
+  <div style="display:flex; gap:0; background:var(--fondo-card); border:1px solid var(--borde); border-radius:var(--radio-sm); padding:4px; margin-bottom:1.5rem;">
+    <button class="tab-btn active" data-tab="login"
+      style="flex:1; padding:10px; border-radius:6px; font-family:var(--font-display); font-size:0.85rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; transition:all 0.2s; background:var(--verde); color:#000;">
+      Ingresar
+    </button>
+    <button class="tab-btn" data-tab="registro"
+      style="flex:1; padding:10px; border-radius:6px; font-family:var(--font-display); font-size:0.85rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; transition:all 0.2s; background:transparent; color:var(--texto-sub);">
+      Registrarse
+    </button>
+  </div>
+
+  <!-- Formulario Login -->
+  <form id="form-login" class="flex flex-col gap-4">
+    <div class="form-group">
+      <label class="form-label">Correo electrónico</label>
+      <input type="email" id="login-correo" class="form-input" placeholder="tu@correo.com" autocomplete="email" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contraseña</label>
+      <input type="password" id="login-password" class="form-input" placeholder="••••••••" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="btn btn-primary mt-2" id="btn-login">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h14M10 3l7 7-7 7"/></svg>
+      Ingresar
+    </button>
+  </form>
+
+  <!-- Formulario Registro -->
+  <form id="form-registro" class="flex flex-col gap-4 hidden">
+    <div class="form-group">
+      <label class="form-label">Nombre completo</label>
+      <input type="text" id="reg-nombre" class="form-input" placeholder="Tu nombre" autocomplete="name" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Correo electrónico</label>
+      <input type="email" id="reg-correo" class="form-input" placeholder="tu@correo.com" autocomplete="email" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contraseña</label>
+      <input type="password" id="reg-password" class="form-input" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required>
+    </div>
+
+    <!-- Verificación de documento -->
+    <div class="card" style="gap:12px; display:flex; flex-direction:column;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="var(--verde)" stroke-width="2"><rect x="2" y="5" width="16" height="12" rx="2"/><path d="M6 9h4M6 12h8"/></svg>
+        <span style="font-family:var(--font-display); font-size:0.9rem; font-weight:700; text-transform:uppercase;">Verificación de identidad</span>
+      </div>
+      <p class="text-hint" style="font-size:0.8rem; line-height:1.5;">
+        Tomá una foto de tu cédula de ciudadanía para evitar reservas falsas. Tus datos están seguros.
+      </p>
+
+      <!-- Vista de cámara -->
+      <div id="cam-wrap" class="cam-container hidden">
+        <video id="cam-video" class="cam-video" playsinline autoplay muted></video>
+        <canvas id="cam-canvas" hidden></canvas>
+        <div class="cam-overlay">
+          <div class="cam-frame"></div>
+        </div>
+        <div class="cam-instruccion">Ubicá tu cédula dentro del marco</div>
+      </div>
+
+      <!-- Preview foto -->
+      <img id="foto-preview" class="cam-preview hidden" alt="Foto del documento">
+
+      <!-- Botones cámara -->
+      <div id="cam-acciones" style="display:flex; flex-direction:column; gap:8px;">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-abrir-camara" style="width:100%;">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="10" cy="11" r="3"/><path d="M7 4H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2L11 2H9L7 4z"/></svg>
+          Abrir cámara
+        </button>
+        <button type="button" class="btn btn-primary btn-sm hidden" id="btn-capturar" style="width:100%;">
+          📸 Capturar foto
+        </button>
+        <button type="button" class="btn btn-ghost btn-sm hidden" id="btn-repetir" style="width:100%;">
+          Repetir foto
+        </button>
+      </div>
+
+      <div id="cam-status"></div>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-2" id="btn-registrar">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 4v12M4 10h12"/></svg>
+      Crear cuenta
+    </button>
+  </form>
+
+</div>
+
+<script type="module">
+  import { login, registrar } from '/js/auth.js';
+  import { iniciarCamara, capturarFoto, detenerCamara, soportaCamara } from '/js/camara.js';
+  import { mostrarToast, mostrarLoading, ocultarLoading } from '/js/app.js';
+  import { initDB } from '/js/db.js';
+
+  await initDB();
+
+  // ─── Tabs ───────────────────────────────────────────
+  const tabs = document.querySelectorAll('.tab-btn');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => {
+        t.style.background = 'transparent';
+        t.style.color = 'var(--texto-sub)';
+      });
+      tab.style.background = 'var(--verde)';
+      tab.style.color = '#000';
+
+      document.getElementById('form-login').classList.toggle('hidden', tab.dataset.tab !== 'login');
+      document.getElementById('form-registro').classList.toggle('hidden', tab.dataset.tab !== 'registro');
+    });
+  });
+
+  // ─── Login ──────────────────────────────────────────
+  document.getElementById('form-login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-login');
+    btn.disabled = true; btn.textContent = 'Ingresando...';
+    try {
+      await login({
+        correo:   document.getElementById('login-correo').value,
+        password: document.getElementById('login-password').value
+      });
+      window.location.href = '/pages/home.html';
+    } catch (err) {
+      mostrarToast(err.message, 'error');
+      btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h14M10 3l7 7-7 7"/></svg> Ingresar';
+    }
+  });
+
+  // ─── Registro ────────────────────────────────────────
+  let fotoDocumento = null;
+
+  document.getElementById('form-registro').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!fotoDocumento) {
+      mostrarToast('Por favor tomá la foto de tu documento.', 'error');
+      return;
+    }
+    mostrarLoading('Creando tu cuenta...');
+    try {
+      await registrar({
+        nombre:        document.getElementById('reg-nombre').value,
+        correo:        document.getElementById('reg-correo').value,
+        password:      document.getElementById('reg-password').value,
+        fotoDocumento: fotoDocumento
+      });
+      window.location.href = '/pages/home.html';
+    } catch (err) {
+      mostrarToast(err.message, 'error');
+    } finally {
+      ocultarLoading();
+    }
+  });
+
+  // ─── Cámara ──────────────────────────────────────────
+  const video    = document.getElementById('cam-video');
+  const canvas   = document.getElementById('cam-canvas');
+  const camWrap  = document.getElementById('cam-wrap');
+  const preview  = document.getElementById('foto-preview');
+  const status   = document.getElementById('cam-status');
+  const btnAbrir = document.getElementById('btn-abrir-camara');
+  const btnCapt  = document.getElementById('btn-capturar');
+  const btnRep   = document.getElementById('btn-repetir');
+
+  if (!soportaCamara()) {
+    btnAbrir.textContent = 'Cámara no disponible';
+    btnAbrir.disabled = true;
+  }
+
+  btnAbrir.addEventListener('click', async () => {
+    try {
+      camWrap.classList.remove('hidden');
+      btnAbrir.classList.add('hidden');
+      btnCapt.classList.remove('hidden');
+      await iniciarCamara(video);
+    } catch (err) {
+      mostrarToast(err.message, 'error');
+      camWrap.classList.add('hidden');
+      btnAbrir.classList.remove('hidden');
+      btnCapt.classList.add('hidden');
+    }
+  });
+
+  btnCapt.addEventListener('click', () => {
+    fotoDocumento = capturarFoto(video, canvas);
+    detenerCamara();
+    camWrap.classList.add('hidden');
+    preview.src = fotoDocumento;
+    preview.classList.remove('hidden');
+    btnCapt.classList.add('hidden');
+    btnRep.classList.remove('hidden');
+    status.innerHTML = `<div class="cam-status ok">✓ Foto capturada correctamente</div>`;
+  });
+
+  btnRep.addEventListener('click', async () => {
+    fotoDocumento = null;
+    preview.classList.add('hidden');
+    btnRep.classList.add('hidden');
+    status.innerHTML = '';
+    camWrap.classList.remove('hidden');
+    btnCapt.classList.remove('hidden');
+    await iniciarCamara(video);
+  });
+</script>
+</body>
+</html>

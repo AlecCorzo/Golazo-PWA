@@ -1,0 +1,21 @@
+{
+  "name": "cancha",
+  "version": "1.0.0",
+  "description": "PWA para reservar canchas sintéticas",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "pwa",
+    "canchas",
+    "futbol",
+    "node"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}

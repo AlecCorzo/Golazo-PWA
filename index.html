@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#00c853">
+  <meta name="description" content="Reserva canchas sintéticas, organiza tu equipo y jugá sin caos.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CanCha">
+  <title>CanCha</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+
+  <!-- Splash screen -->
+  <div class="splash" id="splash">
+    <div class="splash-logo">CANCHA</div>
+    <div class="spinner"></div>
+    <p class="splash-sub">Reservá · Jugá · Ganala</p>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { initApp } from '/js/app.js';
+    import { usuarioStorage } from '/js/db.js';
+
+    async function arrancar() {
+      await initApp();
+
+      setTimeout(() => {
+        const splash = document.getElementById('splash');
+        splash.style.opacity = '0';
+        splash.style.transition = 'opacity 0.4s';
+
+        setTimeout(() => {
+          splash.remove();
+          // Redirigir según sesión
+          if (usuarioStorage.estaLogueado()) {
+            window.location.href = '/pages/home.html';
+          } else {
+            window.location.href = '/pages/login.html';
+          }
+        }, 400);
+      }, 1400);
+    }
+
+    arrancar();
+  </script>
+</body>
+</html>
