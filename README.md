@@ -1,57 +1,139 @@
-# CanCha — Guía de Desarrollo
+# CanCha - PWA para reserva de canchas
+
+CanCha es una Progressive Web App para consultar canchas sinteticas en Tunja, registrar usuarios, iniciar sesion y guardar datos localmente en el navegador. El proyecto esta construido con HTML, CSS y JavaScript modular, servido con Express.
+
+## Estado actual
+
+El proyecto ya cuenta con un MVP funcional de:
+
+- Pantalla splash y redireccion segun sesion activa.
+- Login y registro de usuarios con almacenamiento local.
+- Registro con foto de documento usando la camara del dispositivo.
+- Home autenticado con saludo, proximas reservas y canchas sugeridas.
+- Vista de canchas con buscador, filtros, mapa Leaflet y geolocalizacion.
+- Perfil de usuario con estado de verificacion, permisos de notificaciones, estadisticas basicas y cierre de sesion.
+- Persistencia local con IndexedDB y localStorage.
+- Manifest PWA y service worker base para cache, modo offline, push notifications y background sync.
+- Servidor Express para servir la app desde `localhost`.
+
+> Nota: algunas rutas enlazadas por la interfaz todavia no tienen archivo implementado, como `pages/reserva.html` y `pages/equipo.html`.
+
+## Tecnologias
+
+- HTML5, CSS3 y JavaScript ES Modules.
+- Node.js y Express.
+- IndexedDB para reservas, canchas, equipos y cambios pendientes.
+- localStorage para usuarios, sesion y preferencias.
+- Service Worker y Cache API.
+- Web App Manifest.
+- Notifications API.
+- MediaDevices API para camara.
+- Geolocation API.
+- Leaflet y OpenStreetMap para el mapa.
 
 ## Estructura del proyecto
 
-```
-cancha/
-├── index.html              ← Splash / punto de entrada
-├── manifest.json           ← Config PWA (nombre, íconos, colores)
-├── sw.js                   ← Service Worker (offline, caché, notificaciones)
-├── css/
-│   ├── main.css            ← Estilos globales, variables, layout
-│   └── components.css      ← Componentes específicos (cards, mapa, cámara)
-├── js/
-│   ├── app.js              ← Core: init, toasts, datos demo, helpers
-│   ├── db.js               ← IndexedDB + localStorage (toda la persistencia)
-│   ├── auth.js             ← Login, registro, sesión
-│   ├── camara.js           ← MediaDevices API (foto documento)
-│   ├── notificaciones.js   ← Web Push + Notifications API
-│   ├── geolocalizacion.js  ← Geolocation API + Leaflet.js
-│   └── sincronizacion.js   ← Sync offline → online (por implementar)
-├── pages/
-│   ├── login.html          ← Login + registro con cámara ✅
-│   ├── home.html           ← Inicio: reservas próximas + canchas ✅
-│   ├── canchas.html        ← Mapa + lista de canchas ✅
-│   ├── reserva.html        ← Flujo de reserva (por implementar)
-│   ├── equipo.html         ← Gestión del equipo (por implementar)
-│   └── perfil.html         ← Perfil + stats + logout ✅
-└── icons/
-    ├── icon-192.png        ← (agregar manualmente)
-    └── icon-512.png        ← (agregar manualmente)
+```text
+Golazo-PWA/
+|-- index.html                 # Splash y punto de entrada
+|-- manifest.json              # Configuracion PWA
+|-- sw.js                      # Service Worker
+|-- server.js                  # Servidor Express
+|-- package.json               # Scripts y dependencias
+|-- package-lock.json
+|-- css/
+|   |-- main.css               # Variables, layout y estilos globales
+|   `-- components.css         # Componentes de interfaz
+|-- js/
+|   |-- app.js                 # Inicializacion, service worker, datos demo y helpers
+|   |-- auth.js                # Registro, login, logout y guardas de ruta
+|   |-- camara.js              # Acceso a camara y captura de documento
+|   |-- db.js                  # IndexedDB y localStorage
+|   |-- geolocalizacion.js     # Geolocalizacion, Leaflet y calculo de distancia
+|   `-- notificaciones.js      # Permisos y notificaciones locales
+`-- pages/
+    |-- login.html             # Login y registro
+    |-- home.html              # Inicio autenticado
+    |-- canchas.html           # Mapa, filtros y listado de canchas
+    `-- perfil.html            # Perfil, stats, notificaciones y logout
 ```
 
-## Cómo correr el proyecto
+## Instalacion
 
-### Opción 1 — VS Code + Live Server (recomendado)
-1. Instalar extensión **Live Server** en VS Code
-2. Click derecho en `index.html` → "Open with Live Server"
-3. Abrir en el celular: `http://TU_IP_LOCAL:5500`
+Requisitos:
 
-### Opción 2 — Python (sin instalar nada)
+- Node.js instalado.
+- Navegador moderno compatible con PWA APIs.
+
+Instalar dependencias:
+
 ```bash
-cd cancha
-python -m http.server 8080
-# Abrir: http://localhost:8080
+npm install
 ```
 
-### Opción 3 — Node.js
+Ejecutar en modo normal:
+
 ```bash
-npx serve cancha
+npm start
 ```
 
-> ⚠️ **IMPORTANTE**: Las PWA requieren HTTPS o localhost para funcionar correctamente.
-> El Service Worker, la cámara y las notificaciones NO funcionan en `file://`.
-> Siempre usar un servidor local o desplegar en Netlify/Vercel.
+Ejecutar en modo desarrollo con reinicio automatico:
+
+```bash
+npm run dev
+```
+
+La aplicacion queda disponible en:
+
+```text
+http://localhost:3000
+```
+
+## Uso basico
+
+1. Abre `http://localhost:3000`.
+2. La app muestra el splash y redirige a login si no hay sesion.
+3. Crea una cuenta desde la pestana de registro.
+4. Captura una foto del documento para marcar el usuario como verificado.
+5. Entra al home para ver canchas sugeridas.
+6. Abre la seccion Canchas para usar mapa, filtros y busqueda.
+7. En Perfil puedes revisar datos de usuario, permisos de notificacion y cerrar sesion.
+
+## Datos locales
+
+La app no usa backend de autenticacion ni base de datos remota por ahora.
+
+En `localStorage` se guarda:
+
+- `cancha_usuarios`: usuarios registrados.
+- `cancha_usuario`: sesion activa.
+- `cancha_recordatorios`: metadatos de recordatorios programados.
+- `cancha_*`: preferencias generales.
+
+En IndexedDB, base `canchaDB`, se guardan estos stores:
+
+- `reservas`
+- `canchas`
+- `equipos`
+- `pendientes`
+
+Al inicializar la app, `app.js` carga canchas de demostracion si la base local esta vacia.
+
+## Funcionalidades PWA
+
+La app incluye:
+
+- `manifest.json` con nombre, colores, orientacion e iconos esperados.
+- Registro del service worker desde `js/app.js`.
+- Cache de assets estaticos.
+- Respuesta offline basica si no hay red.
+- Soporte de eventos `push`, `notificationclick` y `sync`.
+
+Importante:
+
+- Las PWA funcionan correctamente en `localhost` o HTTPS.
+- Camara, service worker, geolocalizacion y notificaciones no deben probarse desde `file://`.
+- El manifest referencia `icons/icon-192.png` y `icons/icon-512.png`, pero la carpeta `icons/` no existe actualmente.
 
 ## Agregar los íconos
 
@@ -61,42 +143,32 @@ Crea dos imágenes PNG con el logo de CanCha:
 
 Podés generarlas gratis en: https://realfavicongenerator.net
 
-## Páginas por implementar (Semana 2)
+## Pendientes detectados
 
-### `pages/reserva.html`
-- Recibe `?canchaId=c1` por URL
-- Muestra info de la cancha
-- Selector de fecha y horario (grid de slots)
-- Botón confirmar → guarda en IndexedDB
-- Llama a `programarRecordatorioPartido()`
+- Crear `pages/reserva.html` para completar el flujo de reserva.
+- Crear `pages/equipo.html` para gestion de jugadores y confirmaciones.
+- Crear los iconos PWA en `icons/icon-192.png` y `icons/icon-512.png`.
+- Ajustar `sw.js`: actualmente intenta cachear archivos que no existen (`pages/registro.html`, `pages/reserva.html`, `pages/equipo.html`, `js/router.js`, `js/sincronizacion.js`). Esto puede hacer fallar la instalacion del cache inicial.
+- Implementar `js/sincronizacion.js` o retirar su referencia del service worker.
+- Revisar `programarRecordatorioPartido()` en `js/notificaciones.js`, porque usa una propiedad mal codificada en lugar de `canchaNombre`.
+- Conectar un backend real si se necesita autenticacion segura, sincronizacion entre dispositivos o reservas compartidas.
 
-### `pages/equipo.html`
-- Lista jugadores de la reserva activa
-- Botones Voy / No puedo / Tal vez
-- Genera un código de partido para compartir
-- Muestra estado de confirmación de cada jugador
-- Notifica cambios con `notificarConfirmacion()` y `notificarCancelacion()`
+## Scripts disponibles
 
-### `js/sincronizacion.js`
-- Leer pendientes de IndexedDB
-- Enviar a JSONbin.io o Firebase
-- Marcar como sincronizado
+```bash
+npm start
+```
 
-## APIs nativas usadas
+Inicia `server.js` con Node.
 
-| Feature | API |
-|---------|-----|
-| Cámara / foto documento | `navigator.mediaDevices.getUserMedia()` |
-| Geolocalización | `navigator.geolocation.getCurrentPosition()` |
-| Notificaciones push | `Notification API` + Service Worker |
-| Modo offline | `Service Worker` + Cache API |
-| Instalable | `manifest.json` + `beforeinstallprompt` |
-| Datos locales | `IndexedDB` + `localStorage` |
-| Sync background | `Background Sync API` (Service Worker) |
+```bash
+npm run dev
+```
 
-## Despliegue rápido (para la demo)
+Inicia `server.js` con `node --watch`.
 
-1. Subir el proyecto a GitHub
-2. Ir a [Netlify Drop](https://app.netlify.com/drop)
-3. Arrastrar la carpeta `cancha/`
-4. Netlify da HTTPS automáticamente → PWA funciona al 100%
+## Despliegue
+
+Para una demo rapida se puede desplegar en servicios estaticos con HTTPS como Netlify, Vercel o GitHub Pages. Si se usa Express en produccion, se debe desplegar como aplicacion Node.js.
+
+Antes de desplegar conviene resolver los pendientes del service worker y agregar los iconos requeridos por el manifest.
