@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#00c853">
+  <title>CanCha — Equipo</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <style>
+    /* ─── Código del partido ──────────────────────────── */
+    .codigo-card {
+      background: var(--verde-glow);
+      border: 1px solid rgba(0, 200, 83, 0.35);
+      border-radius: var(--radio);
+      padding: 1.5rem 1.25rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform var(--transition), border-color var(--transition);
+      margin-bottom: 1.25rem;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .codigo-card:active { transform: scale(0.97); }
+    .codigo-hint-top {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--verde);
+      opacity: 0.8;
+    }
+    .codigo-letras {
+      font-family: var(--font-display);
+      font-size: clamp(2.2rem, 10vw, 3rem);
+      font-weight: 800;
+      letter-spacing: 0.25em;
+      color: var(--verde);
+      line-height: 1;
+    }
+    .codigo-hint-bottom {
+      font-size: 0.72rem;
+      color: var(--texto-hint);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 2px;
+    }
+    .codigo-hint-bottom svg { width: 13px; height: 13px; }
+
+    /* ─── Datos del partido ───────────────────────────── */
+    .dato-fila {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--borde);
+    }
+    .dato-fila:last-child { border-bottom: none; }
+    .dato-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: var(--texto-hint);
+      flex-shrink: 0;
+    }
+    .dato-label svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .dato-valor {
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-align: right;
+      color: var(--texto);
+    }
+
+    /* ─── Barra de progreso del equipo ───────────────── */
+    .progreso-bar {
+      height: 4px;
+      border-radius: 99px;
+      background: var(--borde);
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .progreso-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--verde);
+      transition: width 0.5s ease;
+    }
+
+    /* ─── Lista de partidos (sin reservaId) ───────────── */
+    .partido-item {
+      background: var(--fondo-card);
+      border: 1px solid var(--borde);
+      border-radius: var(--radio);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color var(--transition), transform var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .partido-item:hover  { border-color: rgba(0,200,83,0.3); }
+    .partido-item:active { transform: scale(0.985); }
+  </style>
+</head>
+<body class="app-shell">
+<div id="toast-container"></div>
+
+<!-- Header -->
+<div class="page-header">
+  <button class="btn-back" id="btn-atras" aria-label="Volver">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+  </button>
+  <h2 id="page-title">Equipo</h2>
+</div>
+
+<div class="page-content fade-in">
+
+  <!-- Estado: cargando -->
+  <div id="estado-cargando" style="display:flex; align-items:center; gap:10px; padding:2rem 0;">
+    <div class="spinner" style="width:20px;height:20px;border-width:2px;"></div>
+    <span class="text-hint">Cargando...</span>
+  </div>
+
+  <!-- Estado: error -->
+  <div id="estado-error" class="hidden">
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+      </svg>
+      <h3>Partido no encontrado</h3>
+      <p>El código de reserva no existe o fue eliminado.</p>
+      <a href="/pages/home.html">
+        <button class="btn btn-secondary btn-sm mt-2" style="width:auto;">Ir al inicio</button>
+      </a>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       VISTA A — Lista de partidos (sin ?reservaId)
+  ══════════════════════════════════════════════════ -->
+  <div id="vista-lista" class="hidden">
+    <p class="section-title" style="margin-bottom:12px;">Mis partidos</p>
+    <div id="lista-partidos"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       VISTA B — Detalle del partido (?reservaId=X)
+  ══════════════════════════════════════════════════ -->
+  <div id="vista-detalle" class="hidden">
+
+    <!-- Código del partido (toca para copiar) -->
+    <div class="codigo-card" id="btn-copiar" role="button" aria-label="Copiar código del partido">
+      <div class="codigo-hint-top">Código del partido</div>
+      <div class="codigo-letras" id="codigo-display">——</div>
+      <div class="codigo-hint-bottom">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span id="codigo-hint-texto">Toca para copiar</span>
+      </div>
+    </div>
+
+    <!-- Datos del partido -->
+    <p class="section-title" style="margin-bottom:10px;">El partido</p>
+    <div class="card" style="margin-bottom:1.25rem;">
+      <div class="dato-fila">
+        <span class="dato-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><path d="M5 12h14M12 5v14"/>
+          </svg>
+          Cancha
+        </span>
+        <span class="dato-valor" id="dato-cancha">—</span>
+      </div>
+      <div class="dato-fila">
+        <span class="dato-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10 2a6 6 0 0 1 6 6c0 5-6 12-6 12S4 13 4 8a6 6 0 0 1 6-6z"/><circle cx="10" cy="8" r="2"/>
+          </svg>
+          Dirección
+        </span>
+        <span class="dato-valor" id="dato-dir" style="font-weight:400; font-size:0.82rem; color:var(--texto-sub);">—</span>
+      </div>
+      <div class="dato-fila">
+        <span class="dato-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+          </svg>
+          Fecha
+        </span>
+        <span class="dato-valor" id="dato-fecha">—</span>
+      </div>
+      <div class="dato-fila">
+        <span class="dato-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          Hora
+        </span>
+        <span class="dato-valor" id="dato-hora">—</span>
+      </div>
+      <div class="dato-fila">
+        <span class="dato-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+          Precio
+        </span>
+        <span class="dato-valor text-verde" id="dato-precio">—</span>
+      </div>
+    </div>
+
+    <!-- El equipo -->
+    <div style="margin-bottom:1.25rem;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+        <p class="section-title" style="margin-bottom:0;">El equipo</p>
+        <span class="badge" id="conteo-badge">0 confirmados</span>
+      </div>
+      <div class="progreso-bar" style="margin-bottom:12px;">
+        <div class="progreso-fill" id="progreso-fill" style="width:0%"></div>
+      </div>
+      <div class="card" style="padding:0 1.15rem;" id="lista-jugadores">
+        <!-- renderizado por JS -->
+      </div>
+    </div>
+
+    <!-- Acción del usuario -->
+    <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:1.5rem;">
+      <button class="btn btn-primary" id="btn-confirmar">
+        Confirmar mi asistencia
+      </button>
+      <button class="btn btn-secondary" id="btn-compartir">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+        Compartir código
+      </button>
+    </div>
+
+  </div>
+
+</div><!-- end page-content -->
+
+<!-- Navbar -->
+<nav class="navbar">
+  <a href="/pages/home.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Inicio
+  </a>
+  <a href="/pages/canchas.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M5 12h14M12 5v14"/></svg>
+    Canchas
+  </a>
+  <a href="/pages/equipo.html" class="nav-item active">
+    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Equipo
+  </a>
+  <a href="/pages/perfil.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Perfil
+  </a>
+</nav>
+
+<script type="module">
+  import { requiereAuth }   from '/js/auth.js';
+  import { initDB, reservasDB, usuarioStorage } from '/js/db.js';
+  import { mostrarToast, formatearFecha, formatearHora, formatearPrecio, iniciales } from '/js/app.js';
+  import { notificarConfirmacion, notificarCancelacion } from '/js/notificaciones.js';
+
+  await initDB();
+  if (!requiereAuth()) throw new Error('No autenticado');
+
+  const usuario   = usuarioStorage.obtener();
+  const params    = new URLSearchParams(location.search);
+  // notificaciones.js genera URLs con ?id=, reserva.html con ?reservaId=
+  const reservaId = params.get('reservaId') || params.get('id');
+
+  // ─── Ruteo inicial ─────────────────────────────────
+  if (!reservaId) {
+    await mostrarListaPartidos();
+  } else {
+    const reserva = await reservasDB.obtenerPorId(reservaId);
+    reserva ? mostrarDetalle(reserva) : mostrarError();
+  }
+
+  // ─── Vista A: lista de partidos ────────────────────
+  async function mostrarListaPartidos() {
+    ocultar('estado-cargando');
+    mostrar('vista-lista');
+    document.getElementById('btn-atras').onclick = () => history.back();
+
+    const todas    = await reservasDB.obtenerPorUsuario(usuario.id);
+    const activas  = todas
+      .filter(r => r.estado !== 'cancelada')
+      .sort((a, b) => new Date(a.fechaHora) - new Date(b.fechaHora));
+
+    const contenedor = document.getElementById('lista-partidos');
+
+    if (activas.length === 0) {
+      contenedor.innerHTML = `
+        <div class="empty-state" style="padding:2rem 0;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            style="width:48px;height:48px;stroke:var(--texto-hint);">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <h3>Sin partidos activos</h3>
+          <p>Reservá una cancha para organizar tu equipo.</p>
+          <a href="/pages/canchas.html">
+            <button class="btn btn-primary btn-sm mt-2" style="width:auto;">Reservar cancha</button>
+          </a>
+        </div>`;
+      return;
+    }
+
+    contenedor.innerHTML = activas.map(r => {
+      const confirmados = (r.jugadores || []).filter(j => j.estado === 'confirmado').length;
+      const total       = (r.jugadores || []).length;
+      const esPasado    = new Date(r.fechaHora) < new Date();
+      return `
+        <a href="/pages/equipo.html?reservaId=${r.id}">
+          <div class="partido-item">
+            <div style="flex:1; min-width:0;">
+              <div style="font-family:var(--font-display); font-size:1.05rem; font-weight:700;
+                text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${r.canchaNombre}
+              </div>
+              <div style="font-size:0.78rem; color:var(--texto-hint); margin-top:3px;">
+                ${formatearFecha(r.fechaHora)} · ${formatearHora(r.fechaHora)}
+              </div>
+              <div style="font-size:0.75rem; color:var(--texto-sub); margin-top:4px;">
+                Código: <strong style="font-family:var(--font-display); letter-spacing:0.08em;">${r.codigoPartido || '—'}</strong>
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0;">
+              <span class="badge ${esPasado ? 'badge-gris' : 'badge-verde'}">${esPasado ? 'Jugado' : 'Activo'}</span>
+              <span style="font-size:0.75rem; color:var(--texto-hint);">
+                ${confirmados}/${total} ✅
+              </span>
+            </div>
+          </div>
+        </a>`;
+    }).join('');
+  }
+
+  // ─── Vista B: detalle del partido ─────────────────
+  function mostrarDetalle(reserva) {
+    ocultar('estado-cargando');
+    mostrar('vista-detalle');
+    document.getElementById('page-title').textContent = 'Equipo';
+    document.getElementById('btn-atras').onclick = () => {
+      window.location.href = '/pages/home.html';
+    };
+
+    // Código
+    const codigo = reserva.codigoPartido || '——';
+    document.getElementById('codigo-display').textContent = formatCodigo(codigo);
+
+    // Datos del partido
+    document.getElementById('dato-cancha').textContent = reserva.canchaNombre || '—';
+    document.getElementById('dato-dir').textContent    = reserva.canchaDir    || '—';
+    document.getElementById('dato-fecha').textContent  = formatearFecha(reserva.fechaHora);
+    document.getElementById('dato-hora').textContent   = formatearHora(reserva.fechaHora);
+    document.getElementById('dato-precio').textContent = formatearPrecio(reserva.precio);
+
+    renderJugadores(reserva);
+    configurarBotones(reserva);
+  }
+
+  // ─── Renderizar jugadores ──────────────────────────
+  function renderJugadores(reserva) {
+    const jugadores   = reserva.jugadores || [];
+    const confirmados = jugadores.filter(j => j.estado === 'confirmado').length;
+    const total       = jugadores.length;
+
+    // Conteo badge
+    const conteoBadge = document.getElementById('conteo-badge');
+    conteoBadge.textContent = `${confirmados} de ${total} confirmado${confirmados !== 1 ? 's' : ''}`;
+    conteoBadge.className   = confirmados === total && total > 0 ? 'badge badge-verde'
+                            : confirmados > 0                    ? 'badge badge-amarillo'
+                            :                                      'badge badge-rojo';
+
+    // Barra de progreso
+    const pct = total > 0 ? Math.round((confirmados / total) * 100) : 0;
+    document.getElementById('progreso-fill').style.width = `${pct}%`;
+
+    // Lista
+    const lista = document.getElementById('lista-jugadores');
+    if (jugadores.length === 0) {
+      lista.innerHTML = `
+        <div style="padding:1.25rem 0; text-align:center;">
+          <p class="text-hint" style="font-size:0.85rem;">Aún no hay jugadores. Compartí el código!</p>
+        </div>`;
+      return;
+    }
+
+    lista.innerHTML = jugadores.map(j => {
+      const esOrg       = j.id === reserva.usuarioId;
+      const dotClass    = j.estado === 'confirmado' ? 'confirmado'
+                        : j.estado === 'cancelado'  ? 'cancelado'
+                        :                              'pendiente';
+      const estadoLabel = j.estado === 'confirmado' ? 'Confirmado'
+                        : j.estado === 'cancelado'  ? 'Canceló'
+                        :                              'Pendiente';
+      const esYo        = j.id === usuario.id;
+
+      return `
+        <div class="jugador-item">
+          <div class="avatar" style="width:36px;height:36px;font-size:0.78rem;flex-shrink:0;">
+            ${iniciales(j.nombre)}
+          </div>
+          <div class="jugador-nombre" style="flex:1;">
+            ${j.nombre}${esYo ? ' <span style="font-size:0.72rem;color:var(--texto-hint);">(vos)</span>' : ''}
+            ${esOrg ? '<span class="badge badge-gris" style="font-size:0.58rem;padding:2px 6px;margin-left:4px;vertical-align:middle;">Org.</span>' : ''}
+          </div>
+          <div class="jugador-estado">
+            <div class="estado-dot ${dotClass}"></div>
+            <span style="font-size:0.78rem; color:var(--texto-hint);">${estadoLabel}</span>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ─── Configurar botones de acción ─────────────────
+  function configurarBotones(reserva) {
+    actualizarBtnConfirmar(reserva);
+
+    // Copiar código
+    document.getElementById('btn-copiar').addEventListener('click', () => copiarCodigo(reserva));
+
+    // Compartir
+    document.getElementById('btn-compartir').addEventListener('click', () => compartir(reserva));
+  }
+
+  // ─── Botón confirmar / cancelar asistencia ────────
+  function actualizarBtnConfirmar(reserva) {
+    const btn       = document.getElementById('btn-confirmar');
+    const miJugador = (reserva.jugadores || []).find(j => j.id === usuario.id);
+    const estado    = miJugador?.estado;
+
+    if (estado === 'confirmado') {
+      btn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+          <path d="M20 6L9 17l-5-5"/>
+        </svg>
+        Asistencia confirmada`;
+      btn.className = 'btn btn-secondary';
+      btn.onclick   = () => cambiarAsistencia(reserva, 'cancelado');
+    } else if (estado === 'cancelado') {
+      btn.textContent = 'Volver a confirmar asistencia';
+      btn.className   = 'btn btn-primary';
+      btn.onclick     = () => cambiarAsistencia(reserva, 'confirmado');
+    } else {
+      btn.textContent = 'Confirmar mi asistencia';
+      btn.className   = 'btn btn-primary';
+      btn.onclick     = () => cambiarAsistencia(reserva, 'confirmado');
+    }
+  }
+
+  async function cambiarAsistencia(reserva, nuevoEstado) {
+    const btn = document.getElementById('btn-confirmar');
+    btn.disabled = true;
+
+    const jugadores  = reserva.jugadores || [];
+    const idx        = jugadores.findIndex(j => j.id === usuario.id);
+
+    if (idx === -1) {
+      jugadores.push({ id: usuario.id, nombre: usuario.nombre, estado: nuevoEstado });
+    } else {
+      jugadores[idx].estado = nuevoEstado;
+    }
+
+    reserva.jugadores = jugadores;
+
+    try {
+      await reservasDB.guardar(reserva);
+      renderJugadores(reserva);
+      actualizarBtnConfirmar(reserva);
+
+      if (nuevoEstado === 'confirmado') {
+        notificarConfirmacion(usuario.nombre, reserva);
+        mostrarToast('Asistencia confirmada.', 'success');
+      } else {
+        notificarCancelacion(usuario.nombre, reserva);
+        mostrarToast('Cancelaste tu asistencia.', 'info');
+      }
+    } catch (err) {
+      console.error('[Equipo] Error al actualizar asistencia:', err);
+      mostrarToast('No se pudo actualizar. Intentá de nuevo.', 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ─── Copiar código al portapapeles ─────────────────
+  async function copiarCodigo(reserva) {
+    const codigo   = reserva.codigoPartido || '';
+    const hintEl   = document.getElementById('codigo-hint-texto');
+    const codigoEl = document.getElementById('codigo-display');
+
+    try {
+      await navigator.clipboard.writeText(codigo);
+      hintEl.textContent    = 'Copiado!';
+      codigoEl.style.color  = '#fff';
+      mostrarToast(`Código ${formatCodigo(codigo)} copiado.`, 'success');
+      setTimeout(() => {
+        hintEl.textContent   = 'Toca para copiar';
+        codigoEl.style.color = '';
+      }, 2000);
+    } catch {
+      mostrarToast('No se pudo copiar. Copiálo manualmente.', 'info');
+    }
+  }
+
+  // ─── Web Share API ─────────────────────────────────
+  async function compartir(reserva) {
+    const url  = `${location.origin}/pages/equipo.html?reservaId=${reserva.id}`;
+    const text = `Unite al partido! Código: ${reserva.codigoPartido}\n` +
+                 `${reserva.canchaNombre} · ${formatearFecha(reserva.fechaHora)} a las ${formatearHora(reserva.fechaHora)}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'CanCha — Unite al partido!', text, url });
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          mostrarToast('No se pudo abrir el menú de compartir.', 'info');
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(`${text}\n${url}`);
+        mostrarToast('Enlace copiado al portapapeles.', 'success');
+      } catch {
+        mostrarToast('Compartí el código manualmente: ' + reserva.codigoPartido, 'info', 5000);
+      }
+    }
+  }
+
+  // ─── Helpers ───────────────────────────────────────
+  function mostrarError() {
+    ocultar('estado-cargando');
+    mostrar('estado-error');
+    document.getElementById('btn-atras').onclick = () => history.back();
+  }
+
+  function mostrar(id) { document.getElementById(id).classList.remove('hidden'); }
+  function ocultar(id) { document.getElementById(id).classList.add('hidden'); }
+
+  function formatCodigo(codigo) {
+    if (!codigo || codigo.length < 4) return codigo;
+    const mid = Math.ceil(codigo.length / 2);
+    return codigo.slice(0, mid) + ' ' + codigo.slice(mid);
+  }
+</script>
+</body>
+</html>
