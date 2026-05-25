@@ -3,8 +3,8 @@
 // Estrategia: Cache-First para assets, Network-First para datos
 // =====================================================
 
-const CACHE_NAME = 'cancha-v1';
-const DATA_CACHE = 'cancha-data-v1';
+const CACHE_NAME = 'cancha-v4';
+const DATA_CACHE = 'cancha-data-v4';
 
 const STATIC_ASSETS = [
   '/',
