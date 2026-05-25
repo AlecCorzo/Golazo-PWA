@@ -74,15 +74,43 @@
 
 <script type="module">
   import { requiereAuth } from '/js/auth.js';
-  import { canchasDB } from '/js/db.js';
-  import { initDB } from '/js/db.js';
-  import { inicializarMapa, marcarUsuario, mostrarCanchasEnMapa, obtenerUbicacion, calcularDistancia } from '/js/geolocalizacion.js';
+  import { initDB, canchasDB } from '/js/db.js';
+  import { inicializarMapa, marcarUsuario, mostrarCanchasEnMapa, obtenerUbicacion } from '/js/geolocalizacion.js';
   import { mostrarToast, formatearPrecio } from '/js/app.js';
 
-  await initDB();
   if (!requiereAuth()) throw new Error('No autenticado');
 
-  let todasLasCanchas = [];
+  const todasLasCanchas = [
+    {
+      id: 'c1', nombre: 'Cancha El Estadio', direccion: 'Cra 10 #23-45, Tunja',
+      lat: 5.5390, lng: -73.3650, precioPorHora: 80000,
+      disponible: true, superficie: 'Sintético 4G', capacidad: 10,
+      calificacion: 4.7
+    },
+    {
+      id: 'c2', nombre: 'SportZone Tunja', direccion: 'Av. Universitaria #12-10',
+      lat: 5.5320, lng: -73.3720, precioPorHora: 65000,
+      disponible: true, superficie: 'Sintético 3G', capacidad: 14,
+      calificacion: 4.4
+    },
+    {
+      id: 'c3', nombre: 'Arena Norte', direccion: 'Cll 50 #8-20, Tunja Norte',
+      lat: 5.5450, lng: -73.3600, precioPorHora: 70000,
+      disponible: false, superficie: 'Sintético 4G', capacidad: 12,
+      calificacion: 4.2
+    },
+    {
+      id: 'c4', nombre: 'La Bombonera', direccion: 'Barrio Cooservicios, Tunja',
+      lat: 5.5280, lng: -73.3800, precioPorHora: 55000,
+      disponible: true, superficie: 'Sintético 3G', capacidad: 10,
+      calificacion: 4.0
+    }
+  ];
+
+  // Sembrar en IndexedDB para que reserva.html pueda cargar la cancha por ID
+  await initDB();
+  await canchasDB.guardarTodas(todasLasCanchas);
+
   let filtroActivo = 'todas';
   let busqueda = '';
 
@@ -97,9 +125,6 @@
   } catch (err) {
     mostrarToast(err.message, 'info');
   }
-
-  // ─── Cargar canchas ──────────────────────────────────
-  todasLasCanchas = await canchasDB.obtenerTodas();
 
   mostrarCanchasEnMapa(mapa, todasLasCanchas, (cancha) => {
     window.location.href = `/pages/reserva.html?canchaId=${cancha.id}`;
