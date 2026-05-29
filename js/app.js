@@ -11,7 +11,7 @@ import { initFirebase, sincronizarPendientes } from './sincronizacion.js';
 export async function initApp() {
   try {
     await initDB();
-    initFirebase();
+    await initFirebase();
     registrarServiceWorker();
     await cargarCanchasDemo();
 

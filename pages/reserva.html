@@ -433,7 +433,7 @@
   import { initFirebase, sincronizarReserva } from '/js/sincronizacion.js';
 
   await initDB();
-  initFirebase();
+  await initFirebase();
   if (!requiereAuth()) throw new Error('No autenticado');
 
   const usuario    = usuarioStorage.obtener();

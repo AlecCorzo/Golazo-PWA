@@ -17,26 +17,21 @@ import {
   getDocs
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAd5k43OpQ9t7C4ebpelIJLSsk9nS30v9w",
-  authDomain: "cancha-pwa.firebaseapp.com",
-  projectId: "cancha-pwa",
-  storageBucket: "cancha-pwa.firebasestorage.app",
-  messagingSenderId: "142278067971",
-  appId: "1:142278067971:web:32cee5c777d08917000b36"
-};
-
 let app = null;
 let db  = null;
 
-// ─── Inicializar Firebase (se llama una sola vez desde app.js) ──
-export function initFirebase() {
+// ─── Inicializar Firebase ────────────────────────────────────────
+// La config se obtiene del servidor para no exponer claves en el código fuente
+export async function initFirebase() {
   if (getApps().length > 0) {
     app = getApps()[0];
-  } else {
-    app = initializeApp(FIREBASE_CONFIG);
+    db  = getFirestore(app);
+    return;
   }
-  db = getFirestore(app);
+  const res    = await fetch('/api/firebase-config');
+  const config = await res.json();
+  app = initializeApp(config);
+  db  = getFirestore(app);
   console.log('[Firebase] Inicializado ✓');
 }
 
