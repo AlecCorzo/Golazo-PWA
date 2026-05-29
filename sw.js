@@ -10,7 +10,6 @@ const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/pages/login.html',
-  '/pages/registro.html',
   '/pages/home.html',
   '/pages/canchas.html',
   '/pages/reserva.html',
@@ -19,7 +18,6 @@ const STATIC_ASSETS = [
   '/css/main.css',
   '/css/components.css',
   '/js/app.js',
-  '/js/router.js',
   '/js/db.js',
   '/js/auth.js',
   '/js/notificaciones.js',
@@ -135,6 +133,12 @@ self.addEventListener('sync', event => {
 });
 
 async function sincronizarReservasPendientes() {
-  // Se implementa en js/sincronizacion.js
-  console.log('[SW] Sincronizando reservas pendientes...');
+  // Delega la sincronización a cualquier cliente abierto (app.js escucha el mensaje)
+  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  if (clients.length > 0) {
+    clients[0].postMessage({ tipo: 'sync-pendientes' });
+    console.log('[SW] Mensaje sync-pendientes enviado al cliente.');
+  } else {
+    console.log('[SW] Sin clientes abiertos para sincronizar.');
+  }
 }

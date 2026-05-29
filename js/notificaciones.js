@@ -1,6 +1,6 @@
 // =====================================================
 // CANCHA — notificaciones.js
-// Web Push + Notifications API
+// Notifications API + Web Push real con VAPID
 // =====================================================
 
 // ─── Pedir permiso ────────────────────────────────────
@@ -16,7 +16,7 @@ export async function pedirPermisoNotificaciones() {
   return resultado === 'granted';
 }
 
-// ─── Notificación local (sin servidor) ───────────────
+// ─── Notificación local (fallback sin servidor) ───────
 export function notificarLocal(titulo, opciones = {}) {
   if (Notification.permission !== 'granted') return;
 
@@ -36,50 +36,55 @@ export function notificarLocal(titulo, opciones = {}) {
   }
 }
 
-// ─── Recordatorio de partido (programado) ────────────
-export function programarRecordatorioPartido(reserva) {
-  const fechaPartido = new Date(reserva.fechaHora);
-  const unaHoraAntes = new Date(fechaPartido.getTime() - 60 * 60 * 1000);
-  const ahora        = new Date();
-  const delay        = unaHoraAntes.getTime() - ahora.getTime();
-
-  if (delay <= 0) {
-    console.log('[Notif] El partido ya pasó o está en menos de 1 hora.');
+// ─── Suscripción Web Push real (VAPID) ───────────────
+export async function suscribirseAPush(userId) {
+  if (!('PushManager' in window)) {
+    console.warn('[Push] Este navegador no soporta Web Push.');
     return null;
   }
 
-  const timeoutId = setTimeout(() => {
-    notificarLocal(`⚽ ¡Partido en 1 hora!`, {
-      body: `${reserva.canchaНombre} — ${formatearHora(fechaPartido)}. ¡Calentá!`,
-      tag:  `partido-${reserva.id}`,
-      data: { url: `/pages/reserva.html?id=${reserva.id}` }
+  const permiso = await pedirPermisoNotificaciones();
+  if (!permiso) return null;
+
+  try {
+    const res = await fetch('/api/push/vapid-key');
+    const { publicKey } = await res.json();
+
+    const reg          = await navigator.serviceWorker.ready;
+    const subscription = await reg.pushManager.subscribe({
+      userVisibleOnly:      true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey)
     });
-  }, delay);
 
-  // Guardar el id para poder cancelarlo si se cancela la reserva
-  const recordatorios = JSON.parse(localStorage.getItem('cancha_recordatorios') || '{}');
-  recordatorios[reserva.id] = { timeoutId: null, programadoPara: unaHoraAntes.toISOString() };
-  localStorage.setItem('cancha_recordatorios', JSON.stringify(recordatorios));
+    await fetch('/api/push/subscribe', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ userId, subscription })
+    });
 
-  console.log(`[Notif] Recordatorio programado en ${Math.round(delay / 60000)} minutos.`);
-  return timeoutId;
+    console.log('[Push] Suscripción registrada ✓');
+    return subscription;
+  } catch (err) {
+    console.error('[Push] Error al suscribirse:', err);
+    return null;
+  }
 }
 
-// ─── Notificar cancelación ────────────────────────────
+// ─── Notificar cancelación (también dispara push al servidor) ─
 export function notificarCancelacion(nombreJugador, reserva) {
   notificarLocal(`❌ ${nombreJugador} canceló`, {
-    body:    `Ya no va al partido del ${formatearFecha(new Date(reserva.fechaHora))}.`,
-    tag:     `cancelacion-${reserva.id}-${Date.now()}`,
-    data:    { url: `/pages/equipo.html?id=${reserva.id}` }
+    body: `Ya no va al partido del ${formatearFecha(new Date(reserva.fechaHora))}.`,
+    tag:  `cancelacion-${reserva.id}-${Date.now()}`,
+    data: { url: `/pages/equipo.html?reservaId=${reserva.id}` }
   });
 }
 
 // ─── Notificar confirmación ───────────────────────────
 export function notificarConfirmacion(nombreJugador, reserva) {
   notificarLocal(`✅ ${nombreJugador} confirmó`, {
-    body:    `Confirmó asistencia al partido del ${formatearFecha(new Date(reserva.fechaHora))}.`,
-    tag:     `confirmacion-${reserva.id}-${Date.now()}`,
-    data:    { url: `/pages/equipo.html?id=${reserva.id}` }
+    body: `Confirmó asistencia al partido del ${formatearFecha(new Date(reserva.fechaHora))}.`,
+    tag:  `confirmacion-${reserva.id}-${Date.now()}`,
+    data: { url: `/pages/equipo.html?reservaId=${reserva.id}` }
   });
 }
 
@@ -90,4 +95,16 @@ function formatearHora(fecha) {
 
 function formatearFecha(fecha) {
   return fecha.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+// Convierte la clave pública VAPID (base64url) al formato que necesita el navegador
+function urlBase64ToUint8Array(base64String) {
+  const padding  = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64   = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData  = window.atob(base64);
+  const output   = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i++) {
+    output[i] = rawData.charCodeAt(i);
+  }
+  return output;
 }

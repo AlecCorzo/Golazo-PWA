@@ -3,15 +3,26 @@
 // Core: init, utils, datos de demo, helpers globales
 // =====================================================
 
-import { initDB, usuarioStorage, canchasDB, prefs } from './db.js';
-import { pedirPermisoNotificaciones } from './notificaciones.js';
+import { initDB, usuarioStorage, canchasDB, pendientesDB } from './db.js';
+import { pedirPermisoNotificaciones, suscribirseAPush } from './notificaciones.js';
+import { initFirebase, sincronizarPendientes } from './sincronizacion.js';
 
 // ─── Inicialización de la app ─────────────────────────
 export async function initApp() {
   try {
     await initDB();
+    initFirebase();
     registrarServiceWorker();
     await cargarCanchasDemo();
+
+    // Suscribir a push si el usuario ya está logueado
+    const usuario = usuarioStorage.obtener();
+    if (usuario) {
+      suscribirseAPush(usuario.id).catch(err =>
+        console.warn('[App] No se pudo suscribir a push:', err.message)
+      );
+    }
+
     console.log('[CanCha] App inicializada ✓');
   } catch (err) {
     console.error('[CanCha] Error de inicialización:', err);
@@ -20,27 +31,41 @@ export async function initApp() {
 
 // ─── Service Worker ───────────────────────────────────
 function registrarServiceWorker() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-      .then(reg => {
-        console.log('[SW] Registrado:', reg.scope);
-        reg.addEventListener('updatefound', () => {
-          const nuevo = reg.installing;
-          nuevo.addEventListener('statechange', () => {
-            if (nuevo.state === 'installed' && navigator.serviceWorker.controller) {
-              mostrarToast('Nueva versión disponible. Recargá la app.', 'info');
-            }
-          });
+  if (!('serviceWorker' in navigator)) return;
+
+  navigator.serviceWorker.register('/sw.js')
+    .then(reg => {
+      console.log('[SW] Registrado:', reg.scope);
+      reg.addEventListener('updatefound', () => {
+        const nuevo = reg.installing;
+        nuevo.addEventListener('statechange', () => {
+          if (nuevo.state === 'installed' && navigator.serviceWorker.controller) {
+            mostrarToast('Nueva versión disponible. Recargá la app.', 'info');
+          }
         });
-      })
-      .catch(err => console.error('[SW] Error al registrar:', err));
-  }
+      });
+    })
+    .catch(err => console.error('[SW] Error al registrar:', err));
+
+  // Escucha el mensaje del SW para sincronizar pendientes offline
+  navigator.serviceWorker.addEventListener('message', async (event) => {
+    if (event.data?.tipo !== 'sync-pendientes') return;
+    try {
+      const pendientes = await pendientesDB.obtenerTodos();
+      if (pendientes.length === 0) return;
+      await sincronizarPendientes(pendientes);
+      for (const p of pendientes) await pendientesDB.eliminar(p.id);
+      mostrarToast('Datos sincronizados con el servidor.', 'success');
+    } catch (err) {
+      console.error('[App] Error sincronizando pendientes:', err);
+    }
+  });
 }
 
 // ─── Canchas de demo ──────────────────────────────────
 async function cargarCanchasDemo() {
   const existentes = await canchasDB.obtenerTodas();
-  if (existentes.length > 0) return; // ya están cargadas
+  if (existentes.length > 0) return;
 
   const canchasDemo = [
     {

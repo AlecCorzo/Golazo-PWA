@@ -428,10 +428,12 @@
   import { requiereAuth, actualizarFotoDocumento } from '/js/auth.js';
   import { initDB, canchasDB, reservasDB, pendientesDB, usuarioStorage } from '/js/db.js';
   import { mostrarToast, formatearPrecio, generarId } from '/js/app.js';
-  import { programarRecordatorioPartido, pedirPermisoNotificaciones } from '/js/notificaciones.js';
+  import { pedirPermisoNotificaciones } from '/js/notificaciones.js';
   import { iniciarCamara, capturarFoto, detenerCamara, soportaCamara } from '/js/camara.js';
+  import { initFirebase, sincronizarReserva } from '/js/sincronizacion.js';
 
   await initDB();
+  initFirebase();
   if (!requiereAuth()) throw new Error('No autenticado');
 
   const usuario    = usuarioStorage.obtener();
@@ -786,17 +788,21 @@
       // Siempre guardar localmente
       await reservasDB.guardar(reserva);
 
-      // Si offline, encolar para sincronización posterior
+      // Si offline, encolar para sincronización posterior; si online, subir a Firestore
       if (!navigator.onLine) {
-        await pendientesDB.agregar({ tipo: 'reserva', datos: reserva });
+        await pendientesDB.agregar({ tipo: 'reserva', data: reserva });
         mostrarToast('Reserva guardada. Se sincronizará cuando vuelva la red.', 'info');
       } else {
+        try {
+          await sincronizarReserva(reserva);
+        } catch (e) {
+          console.warn('[Reserva] No se pudo sincronizar con Firestore:', e.message);
+        }
         mostrarToast('¡Reserva confirmada!', 'success');
       }
 
-      // Programar recordatorio push 1h antes
+      // Pedir permiso de notificaciones (la suscripción push ya se hizo en initApp)
       await pedirPermisoNotificaciones();
-      programarRecordatorioPartido(reserva);
 
       setTimeout(() => {
         window.location.href = `/pages/equipo.html?reservaId=${reserva.id}`;

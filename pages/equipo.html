@@ -280,8 +280,10 @@
   import { initDB, reservasDB, usuarioStorage } from '/js/db.js';
   import { mostrarToast, formatearFecha, formatearHora, formatearPrecio, iniciales } from '/js/app.js';
   import { notificarConfirmacion, notificarCancelacion } from '/js/notificaciones.js';
+  import { initFirebase, escucharEquipo, sincronizarReserva, obtenerReservaRemota } from '/js/sincronizacion.js';
 
   await initDB();
+  initFirebase();
   if (!requiereAuth()) throw new Error('No autenticado');
 
   const usuario   = usuarioStorage.obtener();
@@ -293,7 +295,12 @@
   if (!reservaId) {
     await mostrarListaPartidos();
   } else {
-    const reserva = await reservasDB.obtenerPorId(reservaId);
+    let reserva = await reservasDB.obtenerPorId(reservaId);
+    if (!reserva) {
+      // No está en local: puede ser que el usuario llegó por link compartido
+      reserva = await obtenerReservaRemota(reservaId);
+      if (reserva) await reservasDB.guardar(reserva);
+    }
     reserva ? mostrarDetalle(reserva) : mostrarError();
   }
 
@@ -380,6 +387,15 @@
 
     renderJugadores(reserva);
     configurarBotones(reserva);
+
+    // Escuchar cambios en tiempo real desde Firestore
+    escucharEquipo(reserva.id, (reservaActualizada) => {
+      reserva.jugadores = reservaActualizada.jugadores;
+      reserva.estado    = reservaActualizada.estado;
+      renderJugadores(reserva);
+      actualizarBtnConfirmar(reserva);
+      reservasDB.guardar(reserva).catch(() => {});
+    });
   }
 
   // ─── Renderizar jugadores ──────────────────────────
@@ -491,6 +507,27 @@
       await reservasDB.guardar(reserva);
       renderJugadores(reserva);
       actualizarBtnConfirmar(reserva);
+
+      // Sincronizar con Firestore para que los demás lo vean en tiempo real
+      try {
+        await sincronizarReserva(reserva);
+      } catch (e) {
+        console.warn('[Equipo] No se pudo sincronizar:', e.message);
+      }
+
+      // Enviar push real al servidor para notificar a los demás jugadores
+      if (navigator.onLine) {
+        fetch('/api/push/send', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reservaId:  reserva.id,
+            tipo:       nuevoEstado === 'confirmado' ? 'confirmacion' : 'cancelacion',
+            fromUserId: usuario.id,
+            fromNombre: usuario.nombre
+          })
+        }).catch(err => console.warn('[Equipo] Push no enviado:', err.message));
+      }
 
       if (nuevoEstado === 'confirmado') {
         notificarConfirmacion(usuario.nombre, reserva);
