@@ -273,6 +273,72 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════
+       VERIFICACIÓN — Documento de identidad
+       (solo si usuario.fotoDocumento es null)
+  ══════════════════════════════════════════════════ -->
+  <div class="step-panel" id="panel-verf">
+
+    <div class="card" style="gap:12px; display:flex; flex-direction:column; margin-bottom:1.25rem;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="var(--verde)" stroke-width="2">
+          <rect x="2" y="5" width="16" height="12" rx="2"/><path d="M6 9h4M6 12h8"/>
+        </svg>
+        <span style="font-family:var(--font-display); font-size:0.9rem; font-weight:700; text-transform:uppercase;">
+          Verificación de identidad
+        </span>
+      </div>
+      <p class="text-hint" style="font-size:0.8rem; line-height:1.5;">
+        Para confirmar tu primera reserva necesitamos verificar tu identidad. Tomá una foto de tu cédula de ciudadanía. Solo se hace una vez.
+      </p>
+
+      <div id="verf-cam-wrap" class="cam-container hidden">
+        <video id="verf-video" class="cam-video" playsinline autoplay muted></video>
+        <canvas id="verf-canvas" hidden></canvas>
+        <div class="cam-overlay">
+          <div class="cam-frame"></div>
+        </div>
+        <div class="cam-instruccion">Ubicá tu cédula dentro del marco</div>
+      </div>
+
+      <img id="verf-preview" class="cam-preview hidden" alt="Foto del documento">
+
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button type="button" class="btn btn-secondary btn-sm" id="verf-btn-abrir" style="width:100%;">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <circle cx="10" cy="11" r="3"/>
+            <path d="M7 4H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2L11 2H9L7 4z"/>
+          </svg>
+          Abrir cámara
+        </button>
+        <button type="button" class="btn btn-primary btn-sm hidden" id="verf-btn-capturar" style="width:100%;">
+          📸 Capturar foto
+        </button>
+        <button type="button" class="btn btn-ghost btn-sm hidden" id="verf-btn-repetir" style="width:100%;">
+          Repetir foto
+        </button>
+      </div>
+
+      <div id="verf-status"></div>
+    </div>
+
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-ghost" id="btn-anterior-verf"
+        style="flex:0 0 auto; width:auto; padding:14px 16px;" aria-label="Paso anterior">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <button class="btn btn-primary" id="btn-continuar-verf" disabled>
+        Continuar
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
        PASO 3 — Confirmación
   ══════════════════════════════════════════════════ -->
   <div class="step-panel" id="panel-3">
@@ -359,10 +425,11 @@
 </nav>
 
 <script type="module">
-  import { requiereAuth }   from '/js/auth.js';
+  import { requiereAuth, actualizarFotoDocumento } from '/js/auth.js';
   import { initDB, canchasDB, reservasDB, pendientesDB, usuarioStorage } from '/js/db.js';
   import { mostrarToast, formatearPrecio, generarId } from '/js/app.js';
   import { programarRecordatorioPartido, pedirPermisoNotificaciones } from '/js/notificaciones.js';
+  import { iniciarCamara, capturarFoto, detenerCamara, soportaCamara } from '/js/camara.js';
 
   await initDB();
   if (!requiereAuth()) throw new Error('No autenticado');
@@ -371,8 +438,10 @@
   const params     = new URLSearchParams(location.search);
   const canchaId   = params.get('canchaId');
 
-  let cancha           = null;
-  let paso             = 1;
+  let cancha            = null;
+  let paso              = 1;
+  let enVerificacion    = false;
+  let fotoDoc           = null;
   let fechaSeleccionada = '';
   let horaSeleccionada  = '';
 
@@ -398,20 +467,25 @@
     badge.textContent  = cancha.disponible ? 'Disponible' : 'Ocupada';
     badge.className    = `badge ${cancha.disponible ? 'badge-verde' : 'badge-rojo'}`;
 
-    document.getElementById('cancha-nombre').textContent    = cancha.nombre;
-    document.getElementById('cancha-dir').textContent       = cancha.direccion;
-    document.getElementById('cancha-precio').textContent    = `${formatearPrecio(cancha.precioPorHora)}/h`;
+    document.getElementById('cancha-nombre').textContent     = cancha.nombre;
+    document.getElementById('cancha-dir').textContent        = cancha.direccion;
+    document.getElementById('cancha-precio').textContent     = `${formatearPrecio(cancha.precioPorHora)}/h`;
     document.getElementById('cancha-superficie').textContent = cancha.superficie;
-    document.getElementById('cancha-capacidad').textContent = `${cancha.capacidad} jugadores`;
-    document.getElementById('cancha-rating').textContent    = `★ ${cancha.calificacion}`;
-    document.getElementById('cancha-horario').textContent   = `Horario: ${cancha.horario}`;
+    document.getElementById('cancha-capacidad').textContent  = `${cancha.capacidad} jugadores`;
+    document.getElementById('cancha-rating').textContent     = `★ ${cancha.calificacion}`;
+    document.getElementById('cancha-horario').textContent    = `Horario: ${cancha.horario}`;
 
     document.getElementById('cancha-info').classList.remove('hidden');
   }
 
   // ─── Stepper ───────────────────────────────────────
   function irAPaso(nuevoPaso) {
-    document.getElementById(`panel-${paso}`).classList.remove('active');
+    if (enVerificacion) {
+      document.getElementById('panel-verf').classList.remove('active');
+      enVerificacion = false;
+    } else {
+      document.getElementById(`panel-${paso}`).classList.remove('active');
+    }
     paso = nuevoPaso;
     document.getElementById(`panel-${paso}`).classList.add('active');
     actualizarStepper();
@@ -423,16 +497,45 @@
     [1, 2, 3].forEach(n => {
       const el = document.getElementById(`step-ind-${n}`);
       el.classList.remove('active', 'done');
-      if (n < paso)      el.classList.add('done');
+      if (n < paso)        el.classList.add('done');
       else if (n === paso) el.classList.add('active');
     });
     document.getElementById('line-1-2').classList.toggle('done', paso > 1);
     document.getElementById('line-2-3').classList.toggle('done', paso > 2);
   }
 
+  function mostrarPanelVerificacion() {
+    document.getElementById(`panel-${paso}`).classList.remove('active');
+    document.getElementById('panel-verf').classList.add('active');
+    enVerificacion = true;
+    // Stepper: pasos 1 y 2 marcados done, paso 3 active (señal de que vamos hacia confirmar)
+    [1, 2, 3].forEach(n => {
+      const el = document.getElementById(`step-ind-${n}`);
+      el.classList.remove('active', 'done');
+      if (n < 3) el.classList.add('done');
+      else       el.classList.add('active');
+    });
+    document.getElementById('line-1-2').classList.add('done');
+    document.getElementById('line-2-3').classList.add('done');
+    document.getElementById('page-title').textContent = 'Verificar identidad';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function ocultarPanelVerificacion() {
+    document.getElementById('panel-verf').classList.remove('active');
+    enVerificacion = false;
+    detenerCamara();
+    resetearCamaraVerif();
+  }
+
   // ─── Navegación ────────────────────────────────────
   document.getElementById('btn-atras').addEventListener('click', () => {
-    if (paso === 1) {
+    if (enVerificacion) {
+      ocultarPanelVerificacion();
+      document.getElementById(`panel-${paso}`).classList.add('active');
+      actualizarStepper();
+      document.getElementById('page-title').textContent = TITULOS[paso];
+    } else if (paso === 1) {
       window.location.href = '/pages/canchas.html';
     } else {
       irAPaso(paso - 1);
@@ -448,11 +551,108 @@
 
   document.getElementById('btn-siguiente-2').addEventListener('click', () => {
     if (!fechaSeleccionada || !horaSeleccionada) return;
-    poblarPaso3();
-    irAPaso(3);
+    if (!usuario.fotoDocumento) {
+      mostrarPanelVerificacion();
+    } else {
+      poblarPaso3();
+      irAPaso(3);
+    }
   });
 
+  // Desde confirmación siempre vuelve a horario (verificación ya fue hecha)
   document.getElementById('btn-anterior-3').addEventListener('click', () => irAPaso(2));
+
+  // ─── Panel verificación — navegación ───────────────
+  document.getElementById('btn-anterior-verf').addEventListener('click', () => {
+    ocultarPanelVerificacion();
+    document.getElementById(`panel-${paso}`).classList.add('active');
+    actualizarStepper();
+    document.getElementById('page-title').textContent = TITULOS[paso];
+  });
+
+  // ─── Panel verificación — cámara ───────────────────
+  const verfVideo    = document.getElementById('verf-video');
+  const verfCanvas   = document.getElementById('verf-canvas');
+  const verfCamWrap  = document.getElementById('verf-cam-wrap');
+  const verfPreview  = document.getElementById('verf-preview');
+  const verfStatus   = document.getElementById('verf-status');
+  const verfBtnAbrir = document.getElementById('verf-btn-abrir');
+  const verfBtnCapt  = document.getElementById('verf-btn-capturar');
+  const verfBtnRep   = document.getElementById('verf-btn-repetir');
+  const btnContinuar = document.getElementById('btn-continuar-verf');
+
+  if (!soportaCamara()) {
+    verfBtnAbrir.textContent = 'Cámara no disponible';
+    verfBtnAbrir.disabled = true;
+  }
+
+  verfBtnAbrir.addEventListener('click', async () => {
+    try {
+      verfCamWrap.classList.remove('hidden');
+      verfBtnAbrir.classList.add('hidden');
+      verfBtnCapt.classList.remove('hidden');
+      await iniciarCamara(verfVideo);
+    } catch (err) {
+      mostrarToast(err.message, 'error');
+      verfCamWrap.classList.add('hidden');
+      verfBtnAbrir.classList.remove('hidden');
+      verfBtnCapt.classList.add('hidden');
+    }
+  });
+
+  verfBtnCapt.addEventListener('click', () => {
+    fotoDoc = capturarFoto(verfVideo, verfCanvas);
+    detenerCamara();
+    verfCamWrap.classList.add('hidden');
+    verfPreview.src = fotoDoc;
+    verfPreview.classList.remove('hidden');
+    verfBtnCapt.classList.add('hidden');
+    verfBtnRep.classList.remove('hidden');
+    verfStatus.innerHTML = `<div style="color:var(--verde);font-size:0.82rem;margin-top:4px;">✓ Foto capturada correctamente</div>`;
+    btnContinuar.disabled = false;
+  });
+
+  verfBtnRep.addEventListener('click', async () => {
+    fotoDoc = null;
+    verfPreview.classList.add('hidden');
+    verfPreview.src = '';
+    verfBtnRep.classList.add('hidden');
+    verfStatus.innerHTML = '';
+    btnContinuar.disabled = true;
+    verfCamWrap.classList.remove('hidden');
+    verfBtnCapt.classList.remove('hidden');
+    await iniciarCamara(verfVideo);
+  });
+
+  btnContinuar.addEventListener('click', async () => {
+    if (!fotoDoc) return;
+    btnContinuar.disabled = true;
+    btnContinuar.textContent = 'Guardando...';
+    try {
+      await actualizarFotoDocumento(fotoDoc);
+      usuario.fotoDocumento = fotoDoc;
+      ocultarPanelVerificacion();
+      poblarPaso3();
+      irAPaso(3);
+    } catch (err) {
+      mostrarToast('Error al guardar la verificación. Intentá de nuevo.', 'error');
+      btnContinuar.disabled = false;
+      btnContinuar.innerHTML = `Continuar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg>`;
+    }
+  });
+
+  function resetearCamaraVerif() {
+    fotoDoc = null;
+    verfCamWrap.classList.add('hidden');
+    verfPreview.classList.add('hidden');
+    verfPreview.src = '';
+    verfBtnAbrir.classList.remove('hidden');
+    verfBtnCapt.classList.add('hidden');
+    verfBtnRep.classList.add('hidden');
+    verfStatus.innerHTML = '';
+    btnContinuar.disabled = true;
+    btnContinuar.innerHTML = `Continuar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="9 18 15 12 9 6"/></svg>`;
+  }
 
   // ─── Paso 2: Fecha y slots ─────────────────────────
   function inicializarPaso2() {
