@@ -150,6 +150,27 @@
        VISTA A — Lista de partidos (sin ?reservaId)
   ══════════════════════════════════════════════════ -->
   <div id="vista-lista" class="hidden">
+
+    <!-- Unirse con código -->
+    <div class="card" style="margin-bottom:1.25rem; padding:1.15rem 1.25rem;">
+      <p style="font-size:0.7rem; color:var(--texto-hint); margin-bottom:10px;
+        text-transform:uppercase; letter-spacing:0.12em; font-weight:700;">
+        Unirse con código
+      </p>
+      <div style="display:flex; gap:10px;">
+        <input type="text" id="input-codigo" class="form-input"
+          placeholder="Ej: ABC123"
+          maxlength="6"
+          style="flex:1; text-transform:uppercase; font-family:var(--font-display);
+            letter-spacing:0.18em; font-size:1rem; text-align:center; padding:12px;"
+          autocomplete="off" spellcheck="false">
+        <button class="btn btn-primary" id="btn-unirse"
+          style="width:auto; padding:0 1.25rem; flex-shrink:0;">
+          Ir
+        </button>
+      </div>
+    </div>
+
     <p class="section-title" style="margin-bottom:12px;">Mis partidos</p>
     <div id="lista-partidos"></div>
   </div>
@@ -280,7 +301,7 @@
   import { initDB, reservasDB, usuarioStorage } from '/js/db.js';
   import { mostrarToast, formatearFecha, formatearHora, formatearPrecio, iniciales } from '/js/app.js';
   import { notificarConfirmacion, notificarCancelacion } from '/js/notificaciones.js';
-  import { initFirebase, escucharEquipo, sincronizarReserva, obtenerReservaRemota } from '/js/sincronizacion.js';
+  import { initFirebase, escucharEquipo, sincronizarReserva, obtenerReservaRemota, buscarReservaPorCodigo } from '/js/sincronizacion.js';
 
   await initDB();
   await initFirebase();
@@ -310,10 +331,18 @@
     mostrar('vista-lista');
     document.getElementById('btn-atras').onclick = () => history.back();
 
-    const todas    = await reservasDB.obtenerPorUsuario(usuario.id);
-    const activas  = todas
-      .filter(r => r.estado !== 'cancelada')
+    // Incluye partidos donde el usuario es creador O aparece como jugador
+    const todas   = await reservasDB.obtenerTodas();
+    const activas = todas
+      .filter(r => r.estado !== 'cancelada' &&
+        (r.usuarioId === usuario.id || (r.jugadores || []).some(j => j.id === usuario.id)))
       .sort((a, b) => new Date(a.fechaHora) - new Date(b.fechaHora));
+
+    // Wiring del input de código
+    const inputCodigo = document.getElementById('input-codigo');
+    const btnUnirse   = document.getElementById('btn-unirse');
+    inputCodigo.addEventListener('keydown', e => { if (e.key === 'Enter') btnUnirse.click(); });
+    btnUnirse.addEventListener('click', () => unirseConCodigo(inputCodigo, btnUnirse));
 
     const contenedor = document.getElementById('lista-partidos');
 
@@ -327,7 +356,7 @@
             <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
           <h3>Sin partidos activos</h3>
-          <p>Reservá una cancha para organizar tu equipo.</p>
+          <p>Reservá una cancha o ingresá un código para unirte a un partido.</p>
           <a href="/pages/canchas.html">
             <button class="btn btn-primary btn-sm mt-2" style="width:auto;">Reservar cancha</button>
           </a>
@@ -339,15 +368,22 @@
       const confirmados = (r.jugadores || []).filter(j => j.estado === 'confirmado').length;
       const total       = (r.jugadores || []).length;
       const esPasado    = new Date(r.fechaHora) < new Date();
+      const esOrg       = r.usuarioId === usuario.id;
       return `
         <a href="/pages/equipo.html?reservaId=${r.id}">
           <div class="partido-item">
             <div style="flex:1; min-width:0;">
-              <div style="font-family:var(--font-display); font-size:1.05rem; font-weight:700;
-                text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                ${r.canchaNombre}
+              <div style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+                <span style="font-family:var(--font-display); font-size:1.05rem; font-weight:700;
+                  text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                  ${r.canchaNombre}
+                </span>
+                <span class="badge ${esOrg ? 'badge-verde' : 'badge-gris'}"
+                  style="font-size:0.58rem; padding:2px 6px; flex-shrink:0;">
+                  ${esOrg ? 'Org.' : 'Jugador'}
+                </span>
               </div>
-              <div style="font-size:0.78rem; color:var(--texto-hint); margin-top:3px;">
+              <div style="font-size:0.78rem; color:var(--texto-hint); margin-top:1px;">
                 ${formatearFecha(r.fechaHora)} · ${formatearHora(r.fechaHora)}
               </div>
               <div style="font-size:0.75rem; color:var(--texto-sub); margin-top:4px;">
@@ -585,6 +621,50 @@
       } catch {
         mostrarToast('Compartí el código manualmente: ' + reserva.codigoPartido, 'info', 5000);
       }
+    }
+  }
+
+  // ─── Buscar partido por código manual ─────────────
+  async function unirseConCodigo(inputEl, btnEl) {
+    const codigo = inputEl.value.trim().toUpperCase();
+    if (codigo.length < 4) {
+      mostrarToast('Ingresá el código del partido.', 'info');
+      inputEl.focus();
+      return;
+    }
+
+    btnEl.disabled  = true;
+    btnEl.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>';
+
+    try {
+      // Buscar primero en local
+      const todas  = await reservasDB.obtenerTodas();
+      let reserva  = todas.find(r => r.codigoPartido === codigo);
+
+      // Si no está en local, buscar en Firestore
+      if (!reserva) {
+        reserva = await buscarReservaPorCodigo(codigo);
+        if (reserva) await reservasDB.guardar(reserva);
+      }
+
+      if (!reserva) {
+        mostrarToast('Código incorrecto. Verificá e intentá de nuevo.', 'error');
+        inputEl.select();
+        return;
+      }
+
+      if (reserva.estado === 'cancelada') {
+        mostrarToast('Este partido fue cancelado.', 'info');
+        return;
+      }
+
+      window.location.href = `/pages/equipo.html?reservaId=${reserva.id}`;
+    } catch (err) {
+      console.error('[Equipo] Error al buscar código:', err);
+      mostrarToast('No se pudo buscar el código. Intentá de nuevo.', 'error');
+    } finally {
+      btnEl.disabled    = false;
+      btnEl.textContent = 'Ir';
     }
   }
 

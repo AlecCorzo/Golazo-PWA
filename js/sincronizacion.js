@@ -103,6 +103,19 @@ export async function sincronizarPendientes(pendientes) {
   }
 }
 
+// Busca una reserva en Firestore por su código de partido
+export async function buscarReservaPorCodigo(codigo) {
+  try {
+    const q    = query(collection(getDB(), 'reservas'), where('codigoPartido', '==', codigo.toUpperCase()));
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    return snap.docs[0].data();
+  } catch (err) {
+    console.error('[Sync] Error buscando por código:', err);
+    return null;
+  }
+}
+
 // ─── SUSCRIPCIONES PUSH ──────────────────────────────
 
 // Guarda la suscripción Web Push del usuario en Firestore
