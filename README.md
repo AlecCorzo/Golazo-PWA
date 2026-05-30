@@ -1,174 +1,214 @@
 # CanCha - PWA para reserva de canchas
 
-CanCha es una Progressive Web App para consultar canchas sinteticas en Tunja, registrar usuarios, iniciar sesion y guardar datos localmente en el navegador. El proyecto esta construido con HTML, CSS y JavaScript modular, servido con Express.
+CanCha es una Progressive Web App para reservar canchas sintéticas en Tunja, organizar equipos de juego y recibir recordatorios automáticos. Está construida con HTML5, CSS3 y JavaScript Vanilla (ES Modules), servida con Express y sincronizada con Firebase Firestore.
 
-## Estado actual
+## Funcionalidades implementadas
 
-El proyecto ya cuenta con un MVP funcional de:
+### Features PWA nativas del navegador
 
-- Pantalla splash y redireccion segun sesion activa.
-- Login y registro de usuarios con almacenamiento local.
-- Registro con foto de documento usando la camara del dispositivo.
-- Home autenticado con saludo, proximas reservas y canchas sugeridas.
-- Vista de canchas con buscador, filtros, mapa Leaflet y geolocalizacion.
-- Perfil de usuario con estado de verificacion, permisos de notificaciones, estadisticas basicas y cierre de sesion.
-- Persistencia local con IndexedDB y localStorage.
-- Manifest PWA y service worker base para cache, modo offline, push notifications y background sync.
-- Servidor Express para servir la app desde `localhost`.
+| Feature | Descripción |
+|---|---|
+| Instalable | Web App Manifest con display standalone, iconos y splash screen |
+| Modo offline | Service Worker Cache-First para assets + IndexedDB para datos |
+| Push notifications | Web Push API con VAPID — recordatorio 1h antes, confirmaciones y cancelaciones |
+| Cámara | MediaDevices API para capturar foto del documento de identidad al registrarse |
+| Geolocalización | Geolocation API + Leaflet.js para mostrar canchas cercanas en mapa |
+| Sincronización | Firebase Firestore con `onSnapshot` para actualizaciones en tiempo real |
+| Background sync | Cola de cambios offline en IndexedDB; se sincronizan al reconectar |
 
-> Nota: algunas rutas enlazadas por la interfaz todavia no tienen archivo implementado, como `pages/reserva.html` y `pages/equipo.html`.
+### Flujo de la aplicación
 
-## Tecnologias
+- **Registro con verificación**: el usuario crea su cuenta y captura una foto de su cédula con la cámara del dispositivo. La cuenta queda marcada como verificada.
+- **Búsqueda de canchas**: mapa interactivo con canchas cercanas, filtros por nombre y disponibilidad.
+- **Reserva en 3 pasos**: selección de cancha → selección de fecha y hora → confirmación. La reserva se guarda en IndexedDB inmediatamente y se sube a Firestore si hay conexión; si no, queda en cola.
+- **Equipo y código de partido**: cada reserva genera un código de 6 caracteres. El organizador lo comparte y los compañeros se unen con ese código. Cada jugador confirma o cancela su asistencia con un toque.
+- **Notificaciones automáticas**: 1 hora antes del partido todos los confirmados reciben un push. Si alguien cancela, el resto recibe una alerta inmediata.
+- **Búsqueda por código**: desde la sección Equipo se puede ingresar el código de un partido para unirse a él.
 
-- HTML5, CSS3 y JavaScript ES Modules.
+### Pendientes / limitaciones actuales
+
+- Las canchas son datos demo cargados en `app.js`; no hay panel de administración para propietarios.
+- La autenticación es 100% local (localStorage + SHA-256). No hay backend de auth; no apto para producción sin añadir autenticación real.
+- No está implementada la lista de espera al liberarse una cancha (mencionada en el documento de requisitos).
+- No hay historial de partidos por usuario con vista dedicada.
+
+---
+
+## Dónde vive cada dato
+
+### Service Worker — caché de assets (`cancha-v4`)
+
+Estrategia **Cache-First** para todos los archivos estáticos:
+
+- `index.html`, todas las páginas en `pages/`
+- Hojas de estilo en `css/`
+- Módulos JS en `js/`
+- `manifest.json` e iconos en `icons/`
+
+Estrategia **Network-First** para llamadas dinámicas a Firebase y a la API del servidor.
+
+### IndexedDB — `canchaDB`
+
+| Store | Contenido |
+|---|---|
+| `reservas` | Reservas del usuario. Funciona offline; se sincronizan a Firestore al reconectar. |
+| `canchas` | Caché local de canchas (datos demo cargados desde `app.js` al iniciar). |
+| `equipos` | Estado del equipo por reserva (jugadores, confirmaciones). |
+| `pendientes` | Cola de cambios realizados sin conexión. El SW los sube en background sync. |
+
+### localStorage
+
+| Clave | Contenido |
+|---|---|
+| `cancha_usuarios` | Array de cuentas registradas (auth local; no va a ningún servidor). |
+| `cancha_usuario` | Objeto de sesión del usuario activo. |
+| `cancha_*` | Preferencias generales del usuario. |
+
+### Firebase Firestore — externo
+
+| Colección | Contenido |
+|---|---|
+| `reservas` | Documentos de reserva sincronizados entre dispositivos. Escuchados con `onSnapshot`. |
+| `subscriptions` | Suscripciones Web Push por usuario para enviar notificaciones desde el servidor. |
+
+### Servidor Express — externo a la PWA
+
+El servidor no sirve datos de negocio; actúa como intermediario seguro para claves que no deben estar en el cliente:
+
+| Endpoint | Propósito |
+|---|---|
+| `GET /api/firebase-config` | Entrega la config de Firebase al cliente sin exponer claves en el HTML. |
+| `GET /api/push/vapid-key` | Entrega la clave pública VAPID para suscribirse a push. |
+| `POST /api/push/subscribe` | Guarda la suscripción push del usuario en Firestore. |
+| `POST /api/push/send` | Envía notificaciones push a los participantes de un partido. |
+
+Además corre un **cron job** cada 5 minutos que revisa las reservas de Firestore y envía el recordatorio "¡Partido en 1 hora!" a los jugadores confirmados.
+
+### CDN — externos
+
+- **Leaflet.js** (v1.9.4) y tiles de **OpenStreetMap**: mapa interactivo de canchas.
+- **Firebase SDK**: cargado desde `gstatic.com`.
+
+---
+
+## Tecnologías
+
+- HTML5, CSS3 y JavaScript ES Modules — sin frameworks.
 - Node.js y Express.
-- IndexedDB para reservas, canchas, equipos y cambios pendientes.
-- localStorage para usuarios, sesion y preferencias.
+- Firebase Firestore (SDK web + Admin SDK).
+- IndexedDB (`canchaDB`) — 4 stores.
+- localStorage — sesión y auth local.
 - Service Worker y Cache API.
 - Web App Manifest.
-- Notifications API.
-- MediaDevices API para camara.
+- Web Push API (VAPID) + `web-push` npm.
+- `node-cron` — recordatorios automáticos.
+- MediaDevices API (`getUserMedia`) — cámara.
 - Geolocation API.
-- Leaflet y OpenStreetMap para el mapa.
+- Leaflet.js + OpenStreetMap.
+
+---
 
 ## Estructura del proyecto
 
 ```text
 Golazo-PWA/
-|-- index.html                 # Splash y punto de entrada
-|-- manifest.json              # Configuracion PWA
-|-- sw.js                      # Service Worker
-|-- server.js                  # Servidor Express
-|-- package.json               # Scripts y dependencias
-|-- package-lock.json
-|-- css/
-|   |-- main.css               # Variables, layout y estilos globales
-|   `-- components.css         # Componentes de interfaz
-|-- js/
-|   |-- app.js                 # Inicializacion, service worker, datos demo y helpers
-|   |-- auth.js                # Registro, login, logout y guardas de ruta
-|   |-- camara.js              # Acceso a camara y captura de documento
-|   |-- db.js                  # IndexedDB y localStorage
-|   |-- geolocalizacion.js     # Geolocalizacion, Leaflet y calculo de distancia
-|   `-- notificaciones.js      # Permisos y notificaciones locales
-`-- pages/
-    |-- login.html             # Login y registro
-    |-- home.html              # Inicio autenticado
-    |-- canchas.html           # Mapa, filtros y listado de canchas
-    `-- perfil.html            # Perfil, stats, notificaciones y logout
+├── index.html                 # Splash y punto de entrada
+├── manifest.json              # Configuración PWA
+├── sw.js                      # Service Worker (cache + push + sync)
+├── server.js                  # Servidor Express + API + cron de recordatorios
+├── package.json               # Scripts y dependencias
+├── .env.example               # Variables de entorno requeridas
+├── css/
+│   ├── main.css               # Variables, layout y estilos globales
+│   └── components.css         # Componentes de interfaz
+├── js/
+│   ├── app.js                 # Inicialización, SW registration, datos demo y helpers
+│   ├── auth.js                # Registro, login, logout y guardas de ruta
+│   ├── camara.js              # Acceso a cámara y captura de documento
+│   ├── db.js                  # IndexedDB (canchaDB) y localStorage
+│   ├── geolocalizacion.js     # Geolocation API, Leaflet y cálculo de distancia
+│   ├── notificaciones.js      # Permisos, notificaciones locales y Web Push
+│   └── sincronizacion.js      # Firebase Firestore — sync, listeners y búsqueda por código
+├── pages/
+│   ├── login.html             # Login y registro
+│   ├── home.html              # Inicio autenticado
+│   ├── canchas.html           # Mapa, filtros y listado de canchas
+│   ├── reserva.html           # Flujo de reserva en 3 pasos + verificación de identidad
+│   ├── equipo.html            # Gestión del equipo, código de partido y confirmaciones
+│   └── perfil.html            # Perfil, stats, notificaciones y logout
+└── icons/
+    ├── icon-192.png
+    └── icon-512.png
 ```
 
-## Instalacion
+---
 
-Requisitos:
+## Instalación
+
+**Requisitos:**
 
 - Node.js instalado.
+- Cuenta de Firebase con un proyecto y Firestore habilitado.
 - Navegador moderno compatible con PWA APIs.
 
-Instalar dependencias:
+**Pasos:**
+
+1. Clonar el repositorio e instalar dependencias:
 
 ```bash
 npm install
 ```
 
-Ejecutar en modo normal:
+2. Copiar el archivo de variables de entorno y completarlo:
 
 ```bash
-npm start
+cp .env.example .env
 ```
 
-Ejecutar en modo desarrollo con reinicio automatico:
-
-```bash
-npm run dev
-```
-
-La aplicacion queda disponible en:
+Variables requeridas en `.env`:
 
 ```text
-http://localhost:3000
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_EMAIL=mailto:tu@email.com
+FIREBASE_PROJECT_ID=...
 ```
 
-## Uso basico
+3. Colocar el archivo `firebase-service-account.json` con las credenciales del Admin SDK de Firebase en la raíz del proyecto.
 
-1. Abre `http://localhost:3000`.
-2. La app muestra el splash y redirige a login si no hay sesion.
-3. Crea una cuenta desde la pestana de registro.
-4. Captura una foto del documento para marcar el usuario como verificado.
-5. Entra al home para ver canchas sugeridas.
-6. Abre la seccion Canchas para usar mapa, filtros y busqueda.
-7. En Perfil puedes revisar datos de usuario, permisos de notificacion y cerrar sesion.
-
-## Datos locales
-
-La app no usa backend de autenticacion ni base de datos remota por ahora.
-
-En `localStorage` se guarda:
-
-- `cancha_usuarios`: usuarios registrados.
-- `cancha_usuario`: sesion activa.
-- `cancha_recordatorios`: metadatos de recordatorios programados.
-- `cancha_*`: preferencias generales.
-
-En IndexedDB, base `canchaDB`, se guardan estos stores:
-
-- `reservas`
-- `canchas`
-- `equipos`
-- `pendientes`
-
-Al inicializar la app, `app.js` carga canchas de demostracion si la base local esta vacia.
-
-## Funcionalidades PWA
-
-La app incluye:
-
-- `manifest.json` con nombre, colores, orientacion e iconos esperados.
-- Registro del service worker desde `js/app.js`.
-- Cache de assets estaticos.
-- Respuesta offline basica si no hay red.
-- Soporte de eventos `push`, `notificationclick` y `sync`.
-
-Importante:
-
-- Las PWA funcionan correctamente en `localhost` o HTTPS.
-- Camara, service worker, geolocalizacion y notificaciones no deben probarse desde `file://`.
-- El manifest referencia `icons/icon-192.png` y `icons/icon-512.png`, pero la carpeta `icons/` no existe actualmente.
-
-## Agregar los íconos
-
-Crea dos imágenes PNG con el logo de CanCha:
-- `icons/icon-192.png` (192×192 px)
-- `icons/icon-512.png` (512×512 px)
-
-Podés generarlas gratis en: https://realfavicongenerator.net
-
-## Pendientes detectados
-
-- Crear `pages/reserva.html` para completar el flujo de reserva.
-- Crear `pages/equipo.html` para gestion de jugadores y confirmaciones.
-- Crear los iconos PWA en `icons/icon-192.png` y `icons/icon-512.png`.
-- Ajustar `sw.js`: actualmente intenta cachear archivos que no existen (`pages/registro.html`, `pages/reserva.html`, `pages/equipo.html`, `js/router.js`, `js/sincronizacion.js`). Esto puede hacer fallar la instalacion del cache inicial.
-- Implementar `js/sincronizacion.js` o retirar su referencia del service worker.
-- Revisar `programarRecordatorioPartido()` en `js/notificaciones.js`, porque usa una propiedad mal codificada en lugar de `canchaNombre`.
-- Conectar un backend real si se necesita autenticacion segura, sincronizacion entre dispositivos o reservas compartidas.
-
-## Scripts disponibles
+4. Iniciar el servidor:
 
 ```bash
 npm start
 ```
 
-Inicia `server.js` con Node.
+Para desarrollo con reinicio automático:
 
 ```bash
 npm run dev
 ```
 
-Inicia `server.js` con `node --watch`.
+La aplicación queda disponible en `http://localhost:3000`.
 
-## Despliegue
+---
 
-Para una demo rapida se puede desplegar en servicios estaticos con HTTPS como Netlify, Vercel o GitHub Pages. Si se usa Express en produccion, se debe desplegar como aplicacion Node.js.
+## Uso básico
 
-Antes de desplegar conviene resolver los pendientes del service worker y agregar los iconos requeridos por el manifest.
+1. Abre `http://localhost:3000`.
+2. El splash redirige a login si no hay sesión activa.
+3. Crea una cuenta desde la pestaña Registro.
+4. Captura una foto del documento de identidad para quedar verificado.
+5. Desde **Canchas**: explora el mapa, filtra y selecciona una cancha.
+6. Desde **Reserva**: elige fecha y horario, confirma la reserva y obtén el código del partido.
+7. Comparte el código de 6 caracteres con tus compañeros.
+8. Desde **Equipo**: cada jugador entra con el código y confirma su asistencia.
+9. 1 hora antes del partido, todos los confirmados reciben una notificación push automática.
+
+---
+
+## Notas de desarrollo
+
+- Las APIs de cámara, geolocalización, service worker y notificaciones requieren **HTTPS o localhost**. No funcionan desde `file://`.
+- La autenticación es local (localStorage). Para producción se debe reemplazar por Firebase Auth u otro proveedor.
+- El cron de recordatorios corre en el servidor, no en el cliente; la app debe estar corriendo para que se envíen.
+- Los datos demo de canchas se cargan automáticamente en IndexedDB si la base local está vacía (ver `app.js`).
