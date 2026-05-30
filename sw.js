@@ -3,8 +3,8 @@
 // Estrategia: Cache-First para assets, Network-First para datos
 // =====================================================
 
-const CACHE_NAME = 'cancha-v4';
-const DATA_CACHE = 'cancha-data-v4';
+const CACHE_NAME = 'cancha-v5';
+const DATA_CACHE = 'cancha-data-v5';
 
 const STATIC_ASSETS = [
   '/',
@@ -24,6 +24,7 @@ const STATIC_ASSETS = [
   '/js/camara.js',
   '/js/geolocalizacion.js',
   '/js/sincronizacion.js',
+  '/js/verificacion.js',
   '/manifest.json'
 ];
 

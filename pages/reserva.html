@@ -8,6 +8,8 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/components.css">
+  <!-- Tesseract.js — OCR para verificación de cédula (se carga en background con async) -->
+  <script async src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     /* ─── Stepper ─────────────────────────────────────── */
     .stepper {
@@ -144,6 +146,35 @@
     .inline-loading {
       display: flex; align-items: center; gap: 10px;
       padding: 2rem 0;
+    }
+
+    /* ─── Verificación: estados de resultado ──────────── */
+    .verf-analizando {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      font-size: 0.82rem; color: var(--texto-sub);
+    }
+    .verf-resultado {
+      display: flex; flex-direction: column; gap: 4px;
+      padding: 10px 12px;
+      border-radius: var(--radio-sm);
+      font-size: 0.82rem; line-height: 1.5;
+    }
+    .verf-resultado.success {
+      background: rgba(0,200,83,0.1);
+      border: 1px solid rgba(0,200,83,0.3);
+    }
+    .verf-resultado.error {
+      background: rgba(244,67,54,0.1);
+      border: 1px solid rgba(244,67,54,0.3);
+    }
+    .verf-titulo {
+      font-weight: 700; display: flex; align-items: center; gap: 6px;
+    }
+    .verf-resultado.success .verf-titulo { color: var(--verde); }
+    .verf-resultado.error   .verf-titulo { color: #f44336; }
+    .verf-detalle {
+      color: var(--texto-sub); font-size: 0.75rem;
     }
   </style>
 </head>
@@ -431,6 +462,7 @@
   import { pedirPermisoNotificaciones } from '/js/notificaciones.js';
   import { iniciarCamara, capturarFoto, detenerCamara, soportaCamara } from '/js/camara.js';
   import { initFirebase, sincronizarReserva } from '/js/sincronizacion.js';
+  import { verificarDocumento, liberarWorker } from '/js/verificacion.js';
 
   await initDB();
   await initFirebase();
@@ -446,6 +478,7 @@
   let fotoDoc           = null;
   let fechaSeleccionada = '';
   let horaSeleccionada  = '';
+  let intentosFallidos  = 0; // contador para habilitar "omitir" tras 2 intentos fallidos
 
   const TITULOS = { 1: 'Reservar', 2: 'Seleccionar hora', 3: 'Confirmar' };
 
@@ -602,16 +635,66 @@
     }
   });
 
-  verfBtnCapt.addEventListener('click', () => {
+  verfBtnCapt.addEventListener('click', async () => {
+    // 1. Capturar y mostrar preview
     fotoDoc = capturarFoto(verfVideo, verfCanvas);
     detenerCamara();
     verfCamWrap.classList.add('hidden');
     verfPreview.src = fotoDoc;
     verfPreview.classList.remove('hidden');
     verfBtnCapt.classList.add('hidden');
+    verfBtnRep.classList.add('hidden');
+    btnContinuar.disabled = true;
+
+    // 2. Mostrar estado de análisis mientras corre la verificación
+    verfStatus.innerHTML = `
+      <div class="verf-analizando">
+        <div class="spinner" style="width:16px;height:16px;border-width:2px;flex-shrink:0;"></div>
+        <span>Analizando documento… esto puede tardar unos segundos.</span>
+      </div>`;
+
+    try {
+      const resultado = await verificarDocumento(fotoDoc);
+
+      if (resultado.aprobado) {
+        intentosFallidos = 0;
+        verfStatus.innerHTML = `
+          <div class="verf-resultado success">
+            <div class="verf-titulo">✓ ${resultado.mensaje}</div>
+            <div class="verf-detalle">${resultado.detalle}</div>
+          </div>`;
+        btnContinuar.disabled = false;
+      } else {
+        intentosFallidos++;
+        // Tras 2 fallos consecutivos aparece la opción de continuar sin verificar
+        const omitirBtn = intentosFallidos >= 2
+          ? `<button type="button" id="btn-omitir-verf" class="btn btn-ghost btn-sm"
+               style="width:100%;margin-top:8px;font-size:0.78rem;">
+               Continuar sin verificar
+             </button>`
+          : '';
+        verfStatus.innerHTML = `
+          <div class="verf-resultado error">
+            <div class="verf-titulo">✗ ${resultado.mensaje}</div>
+            <div class="verf-detalle">${resultado.detalle}</div>
+          </div>
+          ${omitirBtn}`;
+
+        document.getElementById('btn-omitir-verf')?.addEventListener('click', () => {
+          ocultarPanelVerificacion();
+          poblarPaso3();
+          irAPaso(3);
+        });
+      }
+    } catch (err) {
+      verfStatus.innerHTML = `
+        <div class="verf-resultado error">
+          <div class="verf-titulo">✗ Error al analizar</div>
+          <div class="verf-detalle">${err.message}</div>
+        </div>`;
+    }
+
     verfBtnRep.classList.remove('hidden');
-    verfStatus.innerHTML = `<div style="color:var(--verde);font-size:0.82rem;margin-top:4px;">✓ Foto capturada correctamente</div>`;
-    btnContinuar.disabled = false;
   });
 
   verfBtnRep.addEventListener('click', async () => {
@@ -644,7 +727,8 @@
   });
 
   function resetearCamaraVerif() {
-    fotoDoc = null;
+    fotoDoc          = null;
+    intentosFallidos = 0;
     verfCamWrap.classList.add('hidden');
     verfPreview.classList.add('hidden');
     verfPreview.src = '';
@@ -819,6 +903,9 @@
         </svg>`;
     }
   });
+
+  // Liberar el worker de Tesseract al navegar fuera de la página
+  window.addEventListener('pagehide', () => liberarWorker());
 
   // ─── Helpers ───────────────────────────────────────
   function fechaLocal(date) {
