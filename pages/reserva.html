@@ -3,179 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#00c853">
-  <title>CanCha — Reservar</title>
+  <meta name="theme-color" content="#3ae07a">
+  <title>Golazo — Reservar</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/components.css">
   <!-- Tesseract.js — OCR para verificación de cédula (se carga en background con async) -->
   <script async src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
-    /* ─── Stepper ─────────────────────────────────────── */
-    .stepper {
-      display: flex;
-      align-items: center;
-      margin-bottom: 1.5rem;
-    }
-    .step {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 5px;
-      flex: 1;
-    }
-    .step-num {
-      width: 32px; height: 32px;
-      border-radius: 50%;
-      background: var(--fondo-input);
-      border: 2px solid var(--borde);
-      display: flex; align-items: center; justify-content: center;
-      font-family: var(--font-display);
-      font-size: 0.9rem; font-weight: 700;
-      color: var(--texto-hint);
-      transition: all var(--transition);
-      position: relative; z-index: 1;
-    }
-    .step-label {
-      font-size: 0.62rem; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.07em;
-      color: var(--texto-hint);
-      transition: color var(--transition);
-      white-space: nowrap;
-    }
-    .step.active .step-num {
-      background: var(--verde);
-      border-color: var(--verde);
-      color: #000;
-      box-shadow: 0 0 0 4px var(--verde-glow);
-    }
-    .step.active .step-label { color: var(--verde); }
-    .step.done .step-num {
-      background: var(--verde-glow);
-      border-color: var(--verde);
-      color: var(--verde);
-    }
-    .step.done .step-label { color: var(--texto-sub); }
-    /* checkmark for done steps */
-    .step.done .step-num::after {
-      content: '';
-      display: block;
-      width: 10px; height: 6px;
-      border-left: 2px solid var(--verde);
-      border-bottom: 2px solid var(--verde);
-      transform: rotate(-45deg) translateY(-1px);
-    }
-    .step.done .step-num { font-size: 0; }
-    .step-line {
-      flex: 1;
-      height: 2px;
-      background: var(--borde);
-      margin-bottom: 20px;
-      transition: background 0.3s ease;
-    }
-    .step-line.done { background: var(--verde); }
-
-    /* ─── Step panels ─────────────────────────────────── */
-    .step-panel { display: none; }
-    .step-panel.active { display: block; }
-
-    /* ─── Cancha hero (paso 1) ────────────────────────── */
-    .cancha-hero {
-      width: 100%; height: 160px;
-      background: linear-gradient(135deg, #0d2137, #1a3a2a);
-      border-radius: var(--radio) var(--radio) 0 0;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 4rem;
-      position: relative;
-    }
-    .cancha-hero-badge {
-      position: absolute; top: 12px; right: 12px;
-    }
-
-    /* ─── Resumen (paso 3) ────────────────────────────── */
-    .resumen-row {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--borde);
-    }
-    .resumen-row:last-child { border-bottom: none; }
-    .resumen-label {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: var(--texto-hint);
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .resumen-valor {
-      font-family: var(--font-display);
-      font-size: 1rem; font-weight: 700;
-      text-align: right;
-    }
-    .resumen-valor.normal {
-      font-family: var(--font-body);
-      font-size: 0.9rem; font-weight: 400;
-      color: var(--texto-sub);
-    }
-
-    /* ─── Código de partido ───────────────────────────── */
-    .codigo-partido {
-      display: flex;
-      align-items: center; justify-content: center;
-      padding: 14px;
-      background: var(--verde-glow);
-      border: 1px solid var(--verde);
-      border-radius: var(--radio-sm);
-      font-family: var(--font-display);
-      font-size: 2rem; font-weight: 800;
-      letter-spacing: 0.2em;
-      color: var(--verde);
-      margin-top: 4px;
-    }
-
-    /* ─── Date input dark mode fix ────────────────────── */
-    input[type="date"]::-webkit-calendar-picker-indicator {
-      filter: invert(0.6);
-      cursor: pointer;
-    }
-
-    /* ─── Loading state ───────────────────────────────── */
-    .inline-loading {
-      display: flex; align-items: center; gap: 10px;
-      padding: 2rem 0;
-    }
-
-    /* ─── Verificación: estados de resultado ──────────── */
-    .verf-analizando {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 12px;
-      font-size: 0.82rem; color: var(--texto-sub);
-    }
-    .verf-resultado {
-      display: flex; flex-direction: column; gap: 4px;
-      padding: 10px 12px;
-      border-radius: var(--radio-sm);
-      font-size: 0.82rem; line-height: 1.5;
-    }
-    .verf-resultado.success {
-      background: rgba(0,200,83,0.1);
-      border: 1px solid rgba(0,200,83,0.3);
-    }
-    .verf-resultado.error {
-      background: rgba(244,67,54,0.1);
-      border: 1px solid rgba(244,67,54,0.3);
-    }
-    .verf-titulo {
-      font-weight: 700; display: flex; align-items: center; gap: 6px;
-    }
-    .verf-resultado.success .verf-titulo { color: var(--verde); }
-    .verf-resultado.error   .verf-titulo { color: #f44336; }
-    .verf-detalle {
-      color: var(--texto-sub); font-size: 0.75rem;
-    }
+    /* Styles moved to components.css */
   </style>
 </head>
 <body class="app-shell">
@@ -224,7 +60,12 @@
     <div id="cancha-info" class="hidden">
       <div class="card" style="padding:0; overflow:hidden; margin-bottom:1.25rem;">
         <div class="cancha-hero">
-          ⚽
+          <svg class="cancha-hero-svg" width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <circle cx="40" cy="40" r="36" stroke="white" stroke-width="1.5"/>
+            <circle cx="40" cy="40" r="11" stroke="white" stroke-width="1.5"/>
+            <line x1="4" y1="40" x2="76" y2="40" stroke="white" stroke-width="1.5"/>
+            <line x1="40" y1="4" x2="40" y2="76" stroke="white" stroke-width="1"/>
+          </svg>
           <div class="cancha-hero-badge">
             <span class="badge" id="badge-disponible">Disponible</span>
           </div>
@@ -282,7 +123,7 @@
     <div style="margin-bottom:1.5rem;">
       <p class="section-title">Horarios disponibles</p>
       <div id="slots-container">
-        <p class="text-hint" style="padding:0.5rem 0;">Elegí una fecha para ver los horarios.</p>
+        <p class="text-hint" style="padding:0.5rem 0;">Elige una fecha para ver los horarios.</p>
       </div>
     </div>
 
@@ -319,7 +160,7 @@
         </span>
       </div>
       <p class="text-hint" style="font-size:0.8rem; line-height:1.5;">
-        Para confirmar tu primera reserva necesitamos verificar tu identidad. Tomá una foto de tu cédula de ciudadanía. Solo se hace una vez.
+        Para confirmar tu primera reserva necesitamos verificar tu identidad. Toma una foto de tu cedula de ciudadania. Solo se hace una vez.
       </p>
 
       <div id="verf-cam-wrap" class="cam-container hidden">
@@ -328,7 +169,7 @@
         <div class="cam-overlay">
           <div class="cam-frame"></div>
         </div>
-        <div class="cam-instruccion">Ubicá tu cédula dentro del marco</div>
+        <div class="cam-instruccion">Ubica tu cedula dentro del marco</div>
       </div>
 
       <img id="verf-preview" class="cam-preview hidden" alt="Foto del documento">
@@ -882,7 +723,7 @@
         } catch (e) {
           console.warn('[Reserva] No se pudo sincronizar con Firestore:', e.message);
         }
-        mostrarToast('¡Reserva confirmada!', 'success');
+        mostrarToast('Reserva confirmada.', 'success');
       }
 
       // Pedir permiso de notificaciones (la suscripción push ya se hizo en initApp)
@@ -894,7 +735,7 @@
 
     } catch (err) {
       console.error('[Reserva] Error al confirmar:', err);
-      mostrarToast('No pudimos guardar la reserva. Intentá de nuevo.', 'error');
+      mostrarToast('No pudimos guardar la reserva. Intenta de nuevo.', 'error');
       btn.disabled = false;
       btn.innerHTML = `Confirmar reserva
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">

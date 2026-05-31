@@ -3,113 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#00c853">
-  <title>CanCha — Equipo</title>
+  <meta name="theme-color" content="#3ae07a">
+  <title>Golazo — Equipo</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/components.css">
-  <style>
-    /* ─── Código del partido ──────────────────────────── */
-    .codigo-card {
-      background: var(--verde-glow);
-      border: 1px solid rgba(0, 200, 83, 0.35);
-      border-radius: var(--radio);
-      padding: 1.5rem 1.25rem 1.25rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      user-select: none;
-      transition: transform var(--transition), border-color var(--transition);
-      margin-bottom: 1.25rem;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .codigo-card:active { transform: scale(0.97); }
-    .codigo-hint-top {
-      font-size: 0.68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--verde);
-      opacity: 0.8;
-    }
-    .codigo-letras {
-      font-family: var(--font-display);
-      font-size: clamp(2.2rem, 10vw, 3rem);
-      font-weight: 800;
-      letter-spacing: 0.25em;
-      color: var(--verde);
-      line-height: 1;
-    }
-    .codigo-hint-bottom {
-      font-size: 0.72rem;
-      color: var(--texto-hint);
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      margin-top: 2px;
-    }
-    .codigo-hint-bottom svg { width: 13px; height: 13px; }
-
-    /* ─── Datos del partido ───────────────────────────── */
-    .dato-fila {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--borde);
-    }
-    .dato-fila:last-child { border-bottom: none; }
-    .dato-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.78rem;
-      color: var(--texto-hint);
-      flex-shrink: 0;
-    }
-    .dato-label svg { width: 14px; height: 14px; flex-shrink: 0; }
-    .dato-valor {
-      font-size: 0.9rem;
-      font-weight: 600;
-      text-align: right;
-      color: var(--texto);
-    }
-
-    /* ─── Barra de progreso del equipo ───────────────── */
-    .progreso-bar {
-      height: 4px;
-      border-radius: 99px;
-      background: var(--borde);
-      overflow: hidden;
-      margin-top: 8px;
-    }
-    .progreso-fill {
-      height: 100%;
-      border-radius: 99px;
-      background: var(--verde);
-      transition: width 0.5s ease;
-    }
-
-    /* ─── Lista de partidos (sin reservaId) ───────────── */
-    .partido-item {
-      background: var(--fondo-card);
-      border: 1px solid var(--borde);
-      border-radius: var(--radio);
-      padding: 14px 16px;
-      margin-bottom: 10px;
-      cursor: pointer;
-      transition: border-color var(--transition), transform var(--transition);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .partido-item:hover  { border-color: rgba(0,200,83,0.3); }
-    .partido-item:active { transform: scale(0.985); }
-  </style>
+  <!-- Styles moved to components.css -->
 </head>
 <body class="app-shell">
 <div id="toast-container"></div>
@@ -356,7 +255,7 @@
             <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
           <h3>Sin partidos activos</h3>
-          <p>Reservá una cancha o ingresá un código para unirte a un partido.</p>
+          <p>Reserva una cancha o ingresa un código para unirte a un partido.</p>
           <a href="/pages/canchas.html">
             <button class="btn btn-primary btn-sm mt-2" style="width:auto;">Reservar cancha</button>
           </a>
@@ -393,7 +292,7 @@
             <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0;">
               <span class="badge ${esPasado ? 'badge-gris' : 'badge-verde'}">${esPasado ? 'Jugado' : 'Activo'}</span>
               <span style="font-size:0.75rem; color:var(--texto-hint);">
-                ${confirmados}/${total} ✅
+                ${confirmados}/${total} conf.
               </span>
             </div>
           </div>
@@ -456,7 +355,7 @@
     if (jugadores.length === 0) {
       lista.innerHTML = `
         <div style="padding:1.25rem 0; text-align:center;">
-          <p class="text-hint" style="font-size:0.85rem;">Aún no hay jugadores. Compartí el código!</p>
+          <p class="text-hint" style="font-size:0.85rem;">Aun no hay jugadores. Comparte el codigo.</p>
         </div>`;
       return;
     }
@@ -477,7 +376,7 @@
             ${iniciales(j.nombre)}
           </div>
           <div class="jugador-nombre" style="flex:1;">
-            ${j.nombre}${esYo ? ' <span style="font-size:0.72rem;color:var(--texto-hint);">(vos)</span>' : ''}
+            ${j.nombre}${esYo ? ' <span style="font-size:0.72rem;color:var(--texto-hint);">(tu)</span>' : ''}
             ${esOrg ? '<span class="badge badge-gris" style="font-size:0.58rem;padding:2px 6px;margin-left:4px;vertical-align:middle;">Org.</span>' : ''}
           </div>
           <div class="jugador-estado">
@@ -596,19 +495,19 @@
         codigoEl.style.color = '';
       }, 2000);
     } catch {
-      mostrarToast('No se pudo copiar. Copiálo manualmente.', 'info');
+      mostrarToast('No se pudo copiar. Copia el codigo manualmente.', 'info');
     }
   }
 
   // ─── Web Share API ─────────────────────────────────
   async function compartir(reserva) {
     const url  = `${location.origin}/pages/equipo.html?reservaId=${reserva.id}`;
-    const text = `Unite al partido! Código: ${reserva.codigoPartido}\n` +
+    const text = `Unete al partido. Codigo: ${reserva.codigoPartido}\n` +
                  `${reserva.canchaNombre} · ${formatearFecha(reserva.fechaHora)} a las ${formatearHora(reserva.fechaHora)}`;
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'CanCha — Unite al partido!', text, url });
+        await navigator.share({ title: 'Golazo — Unete al partido', text, url });
       } catch (err) {
         if (err.name !== 'AbortError') {
           mostrarToast('No se pudo abrir el menú de compartir.', 'info');
@@ -628,7 +527,7 @@
   async function unirseConCodigo(inputEl, btnEl) {
     const codigo = inputEl.value.trim().toUpperCase();
     if (codigo.length < 4) {
-      mostrarToast('Ingresá el código del partido.', 'info');
+      mostrarToast('Ingresa el codigo del partido.', 'info');
       inputEl.focus();
       return;
     }

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#00c853">
-  <title>CanCha — Perfil</title>
+  <meta name="theme-color" content="#3ae07a">
+  <title>Golazo — Perfil</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/components.css">
@@ -93,7 +93,7 @@
           <div class="avatar" style="width:36px;height:36px;font-size:0.8rem;flex-shrink:0;">GC</div>
           <div>
             <p style="margin:0; font-size:0.9rem; font-weight:600; color:var(--texto);">Gabriel Cely</p>
-            <p style="margin:0; font-size:0.75rem;">Desarrollador CanCha</p>
+            <p style="margin:0; font-size:0.75rem;">Desarrollador Golazo</p>
           </div>
         </div>
         <a href="tel:+573108004190" style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--fondo-input); border-radius:var(--radio-sm); border:1px solid var(--borde);">
@@ -115,7 +115,7 @@
     Cerrar sesión
   </button>
 
-  <p class="text-hint text-center mt-3" style="margin-top:1rem;">CanCha v1.0 · Hecho con ❤️ en Colombia</p>
+  <p class="text-hint text-center mt-3" style="margin-top:1rem;">Golazo v1.0 · Hecho con cuidado en Colombia</p>
 
 </div>
 
@@ -181,7 +181,7 @@
             <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
           </svg>
           <h3 style="font-size:1rem;">Sin reservas aún</h3>
-          <p>Reservá una cancha para verla aquí.</p>
+          <p>Reserva una cancha para verla aqui.</p>
           <a href="/pages/canchas.html">
             <button class="btn btn-secondary btn-sm mt-2" style="width:auto;">Explorar canchas</button>
           </a>
@@ -247,7 +247,7 @@
     if (perm === 'denied') {
       badge.textContent = 'Bloqueadas';
       badge.className   = 'badge badge-rojo';
-      desc.textContent  = 'Activá los permisos en Ajustes del navegador';
+      desc.textContent  = 'Activa los permisos en Ajustes del navegador';
       icon.setAttribute('stroke', 'var(--rojo)');
     } else if (perm === 'default') {
       badge.textContent = 'Sin activar';
@@ -277,7 +277,7 @@
       return;
     }
     if (perm === 'denied') {
-      mostrarToast('Bloqueadas en el navegador. Habilitálas en Ajustes > Privacidad > Notificaciones.', 'info');
+      mostrarToast('Bloqueadas en el navegador. Habilitalas en Ajustes > Privacidad > Notificaciones.', 'info');
       return;
     }
     if (perm === 'default') {
@@ -312,7 +312,7 @@
 
   // ─── Logout ───────────────────────────────────────────
   document.getElementById('btn-logout').addEventListener('click', () => {
-    if (confirm('¿Seguro que querés cerrar sesión?')) logout();
+    if (confirm('¿Seguro que quieres cerrar sesion?')) logout();
   });
 </script>
 </body>

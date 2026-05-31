@@ -1,11 +1,11 @@
 {
-  "name": "CanCha - Reserva tu Cancha",
-  "short_name": "CanCha",
+  "name": "Golazo - Reserva tu Cancha",
+  "short_name": "Golazo",
   "description": "Reserva canchas sintéticas, organiza tu equipo y juega sin caos.",
   "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#0a0f1e",
-  "theme_color": "#00c853",
+  "background_color": "#071208",
+  "theme_color": "#3ae07a",
   "orientation": "portrait-primary",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },

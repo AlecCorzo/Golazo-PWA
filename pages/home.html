@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#00c853">
-  <title>CanCha — Inicio</title>
+  <meta name="theme-color" content="#3ae07a">
+  <title>Golazo — Inicio</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/components.css">
@@ -18,7 +18,7 @@
   <!-- Saludo -->
   <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem;">
     <div>
-      <p class="text-hint">¡Hola,</p>
+      <p class="text-hint">Bienvenido de nuevo,</p>
       <h2 id="usuario-nombre" style="font-size:1.8rem;">Cargando...</h2>
     </div>
     <a href="/pages/perfil.html">
@@ -100,7 +100,7 @@
   import { usuarioStorage, reservasDB, canchasDB } from '/js/db.js';
   import { mostrarToast, formatearFecha, formatearHora, formatearPrecio, iniciales } from '/js/app.js';
   import { initDB } from '/js/db.js';
-  import { pedirPermisoNotificaciones } from '/js/notificaciones.js';
+  import { pedirPermisoNotificaciones, suscribirseAPush } from '/js/notificaciones.js';
 
   await initDB();
   if (!requiereAuth()) throw new Error('No autenticado');
@@ -118,8 +118,9 @@
   window.addEventListener('online',  () => document.getElementById('offline-banner').classList.add('hidden'));
   window.addEventListener('offline', () => document.getElementById('offline-banner').classList.remove('hidden'));
 
-  // ─── Pedir permiso notificaciones ────────────────────
+  // ─── Pedir permiso y suscribir a push ────────────────
   await pedirPermisoNotificaciones();
+  suscribirseAPush(usuario.id).catch(() => {});
 
   // ─── Cargar reservas ─────────────────────────────────
   async function cargarReservas() {
@@ -136,7 +137,7 @@
         <div class="empty-state">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
           <h3>Sin partidos próximos</h3>
-          <p>Reservá una cancha y organizá tu equipo.</p>
+          <p>Reserva una cancha y organiza tu equipo.</p>
           <a href="/pages/canchas.html"><button class="btn btn-primary btn-sm mt-2" style="width:auto;">Reservar ahora</button></a>
         </div>`;
       return;
@@ -183,7 +184,7 @@
       <a href="/pages/canchas.html?id=${c.id}">
         <div class="cancha-card" style="margin-bottom:10px;">
           <div class="cancha-img">
-            <div class="cancha-img-placeholder">⚽</div>
+            <div class="cancha-img-placeholder"></div>
             <div class="cancha-disponible-badge">
               <span class="badge badge-verde">Disponible</span>
             </div>

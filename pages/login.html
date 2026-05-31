@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#00c853">
-  <title>CanCha — Ingresá</title>
+  <meta name="theme-color" content="#3ae07a">
+  <title>Golazo — Ingresar</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/components.css">
@@ -15,19 +15,32 @@
 <div class="page-content" style="display:flex; flex-direction:column; justify-content:center; min-height:100vh; padding-top:2rem;">
 
   <!-- Logo -->
-  <div class="text-center mb-4" style="margin-bottom:2.5rem;">
-    <div style="font-family:var(--font-display); font-size:3rem; font-weight:800; color:var(--verde); letter-spacing:0.05em;">CANCHA</div>
-    <p class="text-hint" style="margin-top:6px;">Reservá · Jugá · Ganala</p>
+  <div class="text-center mb-4" style="margin-bottom:2.5rem; animation: popIn 0.52s cubic-bezier(.34,1.56,.64,1) both;">
+    <div style="display:inline-flex; align-items:center; justify-content:center;
+      width:72px; height:72px; border-radius:20px; background:var(--verde);
+      box-shadow:0 14px 36px -8px rgba(58,224,122,0.55); margin-bottom:14px;">
+      <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
+        <circle cx="19" cy="19" r="16" stroke="#041a09" stroke-width="2"/>
+        <circle cx="19" cy="19" r="5.5" stroke="#041a09" stroke-width="2"/>
+        <line x1="3" y1="19" x2="35" y2="19" stroke="#041a09" stroke-width="1.8"/>
+        <line x1="19" y1="3" x2="19" y2="35" stroke="#041a09" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div style="font-family:var(--font-display); font-size:2.8rem; font-weight:900;
+      color:var(--verde); letter-spacing:0.02em; text-transform:uppercase; line-height:1;">GOLAZO</div>
+    <p style="color:var(--texto-hint); margin-top:6px; font-size:0.82rem; font-weight:600; letter-spacing:0.04em;">
+      Reserva · Juega · Compite
+    </p>
   </div>
 
   <!-- Tabs login / registro -->
-  <div style="display:flex; gap:0; background:var(--fondo-card); border:1px solid var(--borde); border-radius:var(--radio-sm); padding:4px; margin-bottom:1.5rem;">
+  <div style="display:flex; gap:4px; background:var(--fondo-card); border:1.5px solid var(--borde); border-radius:var(--radio-sm); padding:4px; margin-bottom:1.5rem;">
     <button class="tab-btn active" data-tab="login"
-      style="flex:1; padding:10px; border-radius:6px; font-family:var(--font-display); font-size:0.85rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; transition:all 0.2s; background:var(--verde); color:#000;">
+      style="flex:1; padding:10px 8px; border-radius:10px; font-family:var(--font-display); font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:0.01em; transition:all 0.22s; background:var(--verde); color:#041a09; box-shadow:0 4px 12px -3px rgba(58,224,122,0.5); border:none; cursor:pointer;">
       Ingresar
     </button>
     <button class="tab-btn" data-tab="registro"
-      style="flex:1; padding:10px; border-radius:6px; font-family:var(--font-display); font-size:0.85rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; transition:all 0.2s; background:transparent; color:var(--texto-sub);">
+      style="flex:1; padding:10px 8px; border-radius:10px; font-family:var(--font-display); font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:0.01em; transition:all 0.22s; background:transparent; color:var(--texto-sub); border:none; cursor:pointer;">
       Registrarse
     </button>
   </div>
@@ -87,7 +100,7 @@
         t.style.color = 'var(--texto-sub)';
       });
       tab.style.background = 'var(--verde)';
-      tab.style.color = '#000';
+      tab.style.color = '#041a09';
 
       document.getElementById('form-login').classList.toggle('hidden', tab.dataset.tab !== 'login');
       document.getElementById('form-registro').classList.toggle('hidden', tab.dataset.tab !== 'registro');

@@ -50,11 +50,24 @@ export async function suscribirseAPush(userId) {
     const res = await fetch('/api/push/vapid-key');
     const { publicKey } = await res.json();
 
-    const reg          = await navigator.serviceWorker.ready;
-    const subscription = await reg.pushManager.subscribe({
-      userVisibleOnly:      true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey)
-    });
+    const reg   = await navigator.serviceWorker.ready;
+    const appKey = urlBase64ToUint8Array(publicKey);
+
+    let subscription;
+    try {
+      subscription = await reg.pushManager.subscribe({
+        userVisibleOnly:      true,
+        applicationServerKey: appKey
+      });
+    } catch (err) {
+      // Si hay una suscripción con clave VAPID diferente, desuscribir y reintentar
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) await existing.unsubscribe();
+      subscription = await reg.pushManager.subscribe({
+        userVisibleOnly:      true,
+        applicationServerKey: appKey
+      });
+    }
 
     await fetch('/api/push/subscribe', {
       method:  'POST',

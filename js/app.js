@@ -9,24 +9,33 @@ import { initFirebase, sincronizarPendientes } from './sincronizacion.js';
 
 // ─── Inicialización de la app ─────────────────────────
 export async function initApp() {
+  await initDB();
+
+  // SW se registra siempre, independiente del servidor
+  registrarServiceWorker();
+
+  // Firebase puede fallar si el servidor no corre; no bloquea el resto
   try {
-    await initDB();
     await initFirebase();
-    registrarServiceWorker();
-    await cargarCanchasDemo();
-
-    // Suscribir a push si el usuario ya está logueado
-    const usuario = usuarioStorage.obtener();
-    if (usuario) {
-      suscribirseAPush(usuario.id).catch(err =>
-        console.warn('[App] No se pudo suscribir a push:', err.message)
-      );
-    }
-
-    console.log('[CanCha] App inicializada ✓');
   } catch (err) {
-    console.error('[CanCha] Error de inicialización:', err);
+    console.warn('[App] Firebase no disponible (¿servidor corriendo?):', err.message);
   }
+
+  try {
+    await cargarCanchasDemo();
+  } catch (err) {
+    console.warn('[App] No se cargaron canchas demo:', err.message);
+  }
+
+  // Suscribir a push si el usuario ya está logueado
+  const usuario = usuarioStorage.obtener();
+  if (usuario) {
+    suscribirseAPush(usuario.id).catch(err =>
+      console.warn('[App] No se pudo suscribir a push:', err.message)
+    );
+  }
+
+  console.log('[CanCha] App inicializada ✓');
 }
 
 // ─── Service Worker ───────────────────────────────────

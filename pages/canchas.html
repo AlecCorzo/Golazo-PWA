@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#00c853">
-  <title>CanCha — Canchas</title>
+  <meta name="theme-color" content="#3ae07a">
+  <title>Golazo — Canchas</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/components.css">
@@ -12,8 +12,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    .filtro-btn { padding:8px 16px; border-radius:99px; font-size:0.8rem; font-weight:600; border:1px solid var(--borde); background:var(--fondo-card); color:var(--texto-sub); transition:all 0.2s; cursor:pointer; white-space:nowrap; }
-    .filtro-btn.active { background:var(--verde-glow); border-color:var(--verde); color:var(--verde); }
+    /* filtro-btn override moved to main.css */
   </style>
 </head>
 <body class="app-shell">
@@ -165,7 +164,7 @@
       <a href="/pages/reserva.html?canchaId=${c.id}">
         <div class="cancha-card" style="margin-bottom:12px;">
           <div class="cancha-img">
-            <div class="cancha-img-placeholder">⚽</div>
+            <div class="cancha-img-placeholder"></div>
             <div class="cancha-disponible-badge">
               <span class="badge ${c.disponible ? 'badge-verde' : 'badge-rojo'}">
                 ${c.disponible ? 'Disponible' : 'Ocupada'}

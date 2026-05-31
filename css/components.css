@@ -1,46 +1,73 @@
 /* =====================================================
-   CANCHA — components.css
+   GOLAZO — components.css
    Componentes específicos de la app
    ===================================================== */
+
+/* ─── Field Art (reemplaza emoji de cancha) ──────────── */
+.cancha-img {
+  width: 100%; height: 140px;
+  background: linear-gradient(160deg, #0c2e16, #061b0d);
+  position: relative;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.cancha-img::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(90deg, transparent 49.4%, rgba(255,255,255,.1) 50%, transparent 50.6%),
+    radial-gradient(ellipse 55% 30% at 50% 50%, rgba(255,255,255,.06), transparent 70%);
+}
+.cancha-img img { width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 1; }
+
+/* SVG field art como fondo del placeholder */
+.cancha-img-placeholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0; /* oculta cualquier texto/emoji */
+  position: relative; z-index: 1;
+}
+.cancha-img-placeholder::after {
+  content: '';
+  width: 72px; height: 72px;
+  opacity: 0.22;
+  background-image: url("data:image/svg+xml,%3Csvg width='72' height='72' viewBox='0 0 72 72' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='36' cy='36' r='32' stroke='white' stroke-width='1.5'/%3E%3Ccircle cx='36' cy='36' r='10' stroke='white' stroke-width='1.5'/%3E%3Cline x1='4' y1='36' x2='68' y2='36' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.cancha-disponible-badge {
+  position: absolute; top: 10px; right: 10px;
+  z-index: 2;
+}
 
 /* ─── Cancha Card ────────────────────────────────────── */
 .cancha-card {
   background: var(--fondo-card);
-  border: 1px solid var(--borde);
+  border: 1.5px solid var(--borde);
   border-radius: var(--radio);
   overflow: hidden;
+  box-shadow: var(--sombra-card);
   transition: border-color var(--transition), transform var(--transition);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
-.cancha-card:active { transform: scale(0.985); }
-.cancha-card:hover  { border-color: rgba(0,200,83,0.3); }
+.cancha-card:active { transform: scale(0.982); }
+.cancha-card:hover  { border-color: rgba(58, 224, 122, 0.35); }
 
-.cancha-img {
-  width: 100%; height: 140px;
-  background: linear-gradient(135deg, #0d2137, #1a3a2a);
-  position: relative;
-  overflow: hidden;
-}
-.cancha-img img { width: 100%; height: 100%; object-fit: cover; }
-.cancha-img-placeholder {
-  width: 100%; height: 100%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 3rem;
-}
-.cancha-disponible-badge {
-  position: absolute; top: 10px; right: 10px;
-}
-
-.cancha-info { padding: 1rem; }
+.cancha-info { padding: 0.85rem 1rem; }
 .cancha-nombre {
   font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
   color: var(--texto);
   margin-bottom: 4px;
+  line-height: 1.1;
 }
 .cancha-meta {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: 10px;
   margin-top: 8px;
   flex-wrap: wrap;
 }
@@ -52,10 +79,11 @@
 .cancha-meta-item svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
 .cancha-precio {
   font-family: var(--font-display);
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 900;
   color: var(--verde);
   margin-left: auto;
+  white-space: nowrap;
 }
 
 /* ─── Horario Grid ───────────────────────────────────── */
@@ -66,34 +94,46 @@
 }
 .horario-slot {
   background: var(--fondo-input);
-  border: 1px solid var(--borde);
-  border-radius: var(--radio-sm);
-  padding: 10px 8px;
+  border: 1.5px solid var(--borde);
+  border-radius: 11px;
+  padding: 10px 6px;
   text-align: center;
   cursor: pointer;
   transition: all var(--transition);
-  font-size: 0.85rem;
-  color: var(--texto-sub);
-  font-weight: 500;
+  -webkit-tap-highlight-color: transparent;
 }
-.horario-slot:hover     { border-color: var(--verde); color: var(--verde); }
-.horario-slot.selected  { background: var(--verde-glow); border-color: var(--verde); color: var(--verde); font-weight: 700; }
-.horario-slot.ocupado   { opacity: 0.35; pointer-events: none; text-decoration: line-through; }
-.horario-slot .hora     { font-family: var(--font-display); font-size: 1rem; font-weight: 700; display: block; }
-.horario-slot .precio   { font-size: 0.7rem; margin-top: 2px; color: inherit; display: block; }
+.horario-slot:hover     { border-color: var(--verde); }
+.horario-slot.selected  {
+  background: rgba(58,224,122,0.14);
+  border-color: var(--verde);
+}
+.horario-slot.ocupado   { opacity: 0.35; pointer-events: none; }
+.horario-slot .hora {
+  font-family: var(--font-mono);
+  font-size: 14px; font-weight: 700;
+  display: block;
+  color: var(--texto);
+}
+.horario-slot.selected .hora { color: var(--verde); }
+.horario-slot.ocupado  .hora { color: var(--texto-hint); }
+.horario-slot .precio {
+  font-size: 10.5px; margin-top: 2px;
+  display: block; color: var(--texto-hint);
+}
+.horario-slot.selected .precio { color: var(--verde); }
 
 /* ─── Equipo / Jugadores ─────────────────────────────── */
 .jugador-item {
   display: flex; align-items: center; gap: 12px;
-  padding: 12px 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--borde);
 }
 .jugador-item:last-child { border-bottom: none; }
-.jugador-nombre { font-weight: 600; font-size: 0.95rem; flex: 1; }
-.jugador-estado { display: flex; align-items: center; gap: 6px; }
+.jugador-nombre { font-weight: 600; font-size: 0.95rem; flex: 1; color: var(--texto); }
+.jugador-estado { display: flex; align-items: center; gap: 5px; }
 
 .estado-dot {
-  width: 8px; height: 8px; border-radius: 50%;
+  width: 7px; height: 7px; border-radius: 50%;
 }
 .estado-dot.confirmado { background: var(--verde); }
 .estado-dot.pendiente  { background: var(--amarillo); }
@@ -102,23 +142,24 @@
 /* ─── Reserva Card ───────────────────────────────────── */
 .reserva-card {
   background: var(--fondo-card);
-  border: 1px solid var(--borde);
+  border: 1.5px solid var(--borde);
   border-radius: var(--radio);
   padding: 1.15rem;
   display: flex; flex-direction: column; gap: 12px;
+  box-shadow: var(--sombra-card);
 }
 .reserva-header {
   display: flex; align-items: flex-start; justify-content: space-between;
 }
 .reserva-cancha {
   font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: 1.1rem; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.01em;
 }
 .reserva-fecha {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--texto-hint);
-  margin-top: 2px;
+  margin-top: 3px;
 }
 .reserva-meta {
   display: flex; align-items: center; gap: 16px;
@@ -129,21 +170,21 @@
   display: flex; flex-direction: column; gap: 2px;
 }
 .reserva-meta-item span:first-child {
-  font-size: 0.7rem; text-transform: uppercase;
+  font-size: 0.68rem; text-transform: uppercase;
   letter-spacing: 0.07em; color: var(--texto-hint);
 }
 .reserva-meta-item span:last-child {
   font-family: var(--font-display);
-  font-size: 1rem; font-weight: 700;
+  font-size: 1rem; font-weight: 900; text-transform: uppercase;
 }
 .reserva-jugadores-row {
   display: flex; align-items: center; gap: 6px;
 }
 .avatar-sm {
   width: 28px; height: 28px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--verde-dark), var(--azul));
+  background: linear-gradient(135deg, var(--verde), #1a50a0);
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.7rem; font-weight: 700;
+  font-size: 0.68rem; font-weight: 800; color: #041a09;
   border: 2px solid var(--fondo-card);
   margin-left: -6px;
 }
@@ -208,14 +249,14 @@
   border-radius: var(--radio-sm);
   font-size: 0.85rem;
 }
-.cam-status.ok    { background: rgba(0,200,83,0.1); color: var(--verde); border: 1px solid rgba(0,200,83,0.3); }
-.cam-status.error { background: rgba(244,67,54,0.1); color: var(--rojo);  border: 1px solid rgba(244,67,54,0.3); }
+.cam-status.ok    { background: rgba(58,224,122,0.1);  color: var(--verde); border: 1px solid rgba(58,224,122,0.3); }
+.cam-status.error { background: rgba(245,82,80,0.1);   color: var(--rojo);  border: 1px solid rgba(245,82,80,0.3); }
 
 /* ─── Mapa ───────────────────────────────────────────── */
 #mapa {
-  width: 100%; height: 280px;
+  width: 100%; height: 260px;
   border-radius: var(--radio);
-  border: 1px solid var(--borde);
+  border: 1.5px solid var(--borde);
   overflow: hidden;
   z-index: 0;
 }
@@ -226,31 +267,42 @@
   align-items: center; gap: 12px;
   padding: 1.5rem 0 1rem;
   text-align: center;
+  animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.93); }
+  65%  { transform: scale(1.02); }
+  100% { opacity: 1; transform: none; }
 }
 .perfil-avatar {
-  width: 72px; height: 72px;
+  width: 74px; height: 74px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--verde-dark), var(--azul));
+  background: linear-gradient(135deg, var(--verde), #1a50a0);
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-display);
-  font-size: 1.8rem; font-weight: 700;
+  font-size: 1.6rem; font-weight: 900;
+  text-transform: uppercase;
+  color: #041a09;
   border: 3px solid var(--verde);
   overflow: hidden;
+  box-shadow: 0 0 0 4px rgba(58,224,122,0.12);
 }
 .perfil-nombre {
   font-family: var(--font-display);
-  font-size: 1.6rem; font-weight: 800;
+  font-size: 1.45rem; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.01em;
 }
 .perfil-verificado {
   display: flex; align-items: center; gap: 5px;
-  font-size: 0.8rem; color: var(--verde);
+  font-size: 0.8rem; color: var(--verde); font-weight: 600;
 }
 .perfil-stats {
   display: grid; grid-template-columns: repeat(3,1fr);
   gap: 1px; background: var(--borde);
-  border: 1px solid var(--borde);
+  border: 1.5px solid var(--borde);
   border-radius: var(--radio);
   overflow: hidden;
+  box-shadow: var(--sombra-card);
 }
 .stat-item {
   background: var(--fondo-card);
@@ -259,13 +311,261 @@
 }
 .stat-value {
   font-family: var(--font-display);
-  font-size: 1.5rem; font-weight: 800;
-  color: var(--verde);
+  font-size: 1.6rem; font-weight: 900;
+  color: var(--verde); line-height: 1;
 }
 .stat-label {
-  font-size: 0.7rem; color: var(--texto-hint);
+  font-family: var(--font-display);
+  font-size: 9px; color: var(--texto-hint);
+  text-transform: uppercase; letter-spacing: 0.09em;
+  margin-top: 3px;
+}
+
+/* ─── Hero de cancha (en reserva.html) ───────────────── */
+.cancha-hero {
+  width: 100%; height: 160px;
+  background: linear-gradient(160deg, #0c2e16, #061b0d);
+  border-radius: var(--radio) var(--radio) 0 0;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.cancha-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(90deg, transparent 49.4%, rgba(255,255,255,.1) 50%, transparent 50.6%),
+    radial-gradient(ellipse 55% 30% at 50% 50%, rgba(255,255,255,.06), transparent 70%);
+}
+.cancha-hero-svg {
+  position: relative; z-index: 1;
+  opacity: 0.22;
+}
+.cancha-hero-badge {
+  position: absolute; top: 12px; right: 12px;
+  z-index: 2;
+}
+
+/* ─── Código de partido (equipo.html) ────────────────── */
+.codigo-card {
+  background: rgba(58,224,122,0.1);
+  border: 1.5px solid rgba(58,224,122,0.3);
+  border-radius: var(--radio);
+  padding: 1.5rem 1.25rem 1.25rem;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+  cursor: pointer; user-select: none;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), border-color var(--transition);
+  margin-bottom: 1.25rem;
+  -webkit-tap-highlight-color: transparent;
+  animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.04s both;
+}
+.codigo-card:active { transform: scale(0.97); }
+.codigo-hint-top {
+  font-family: var(--font-display);
+  font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--verde); opacity: 0.8;
+}
+.codigo-letras {
+  font-family: var(--font-mono);
+  font-size: clamp(1.9rem, 9vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--verde);
+  line-height: 1.1;
+}
+.codigo-hint-bottom {
+  font-size: 0.72rem; color: var(--texto-hint);
+  display: flex; align-items: center; gap: 5px; margin-top: 2px;
+}
+.codigo-hint-bottom svg { width: 13px; height: 13px; }
+
+/* ─── Datos del partido (equipo.html) ────────────────── */
+.dato-fila {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borde);
+}
+.dato-fila:last-child { border-bottom: none; }
+.dato-label {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.78rem; color: var(--texto-hint); flex-shrink: 0;
+}
+.dato-label svg { width: 14px; height: 14px; flex-shrink: 0; }
+.dato-valor { font-size: 0.9rem; font-weight: 600; text-align: right; color: var(--texto); }
+
+/* ─── Barra de progreso del equipo ───────────────────── */
+.progreso-bar {
+  height: 4px; border-radius: 999px;
+  background: var(--borde); overflow: hidden; margin-top: 8px;
+}
+.progreso-fill {
+  height: 100%; border-radius: 999px;
+  background: var(--verde); transition: width 0.5s ease;
+}
+
+/* ─── Lista de partidos ───────────────────────────────── */
+.partido-item {
+  background: var(--fondo-card);
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color var(--transition), transform var(--transition);
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 12px;
+  box-shadow: var(--sombra-card);
+  -webkit-tap-highlight-color: transparent;
+}
+.partido-item:hover  { border-color: rgba(58,224,122,0.3); }
+.partido-item:active { transform: scale(0.985); }
+
+/* ─── Stepper ────────────────────────────────────────── */
+.stepper {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+.step {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 5px; flex: 1;
+}
+.step-num {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--fondo-input);
+  border: 2px solid var(--borde);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-size: 13px; font-weight: 800;
+  color: var(--texto-hint);
+  transition: all 0.3s;
+  position: relative; z-index: 1;
+}
+.step-label {
+  font-family: var(--font-display);
+  font-size: 9.5px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.06em;
-  margin-top: 2px;
+  color: var(--texto-hint);
+  transition: color var(--transition);
+  white-space: nowrap;
+}
+.step.active .step-num {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: #041a09;
+  box-shadow: 0 0 0 4px rgba(58,224,122,0.14);
+}
+.step.active .step-label { color: var(--verde); }
+.step.done .step-num {
+  background: rgba(58,224,122,0.14);
+  border-color: var(--verde);
+  color: var(--verde);
+}
+.step.done .step-num::after {
+  content: '';
+  display: block;
+  width: 10px; height: 6px;
+  border-left: 2px solid var(--verde);
+  border-bottom: 2px solid var(--verde);
+  transform: rotate(-45deg) translateY(-1px);
+}
+.step.done .step-num { font-size: 0; }
+.step.done .step-label { color: var(--texto-sub); }
+.step-line {
+  flex: 1; height: 2px;
+  background: var(--borde);
+  margin-bottom: 20px;
+  transition: background 0.4s ease;
+}
+.step-line.done { background: var(--verde); }
+
+/* ─── Step panels ─────────────────────────────────────── */
+.step-panel { display: none; }
+.step-panel.active { display: block; animation: fadeUp 0.38s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ─── Resumen (paso 3 reserva) ───────────────────────── */
+.resumen-row {
+  display: flex; align-items: baseline;
+  justify-content: space-between;
+  gap: 12px; padding: 12px 0;
+  border-bottom: 1px solid var(--borde);
+}
+.resumen-row:last-child { border-bottom: none; }
+.resumen-label {
+  font-family: var(--font-display);
+  font-size: 10.5px; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--texto-hint);
+  white-space: nowrap; flex-shrink: 0;
+}
+.resumen-valor {
+  font-family: var(--font-display);
+  font-size: 14px; font-weight: 900;
+  text-transform: uppercase; text-align: right;
+}
+.resumen-valor.normal {
+  font-family: var(--font-body);
+  font-size: 0.85rem; font-weight: 400;
+  text-transform: none; color: var(--texto-sub);
+}
+
+/* ─── Código de partido (en reserva.html) ────────────── */
+.codigo-partido {
+  display: flex; align-items: center; justify-content: center;
+  padding: 14px;
+  background: rgba(58,224,122,0.1);
+  border: 1.5px solid var(--verde);
+  border-radius: var(--radio-sm);
+  font-family: var(--font-mono);
+  font-size: 2rem; font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--verde);
+  margin-top: 4px;
+}
+
+/* ─── Date input dark mode ────────────────────────────── */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.6) sepia(1) hue-rotate(85deg);
+  cursor: pointer;
+}
+
+/* ─── Verificación resultado ──────────────────────────── */
+.verf-analizando {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  font-size: 0.82rem; color: var(--texto-sub);
+}
+.verf-resultado {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 10px 12px;
+  border-radius: var(--radio-sm);
+  font-size: 0.82rem; line-height: 1.5;
+}
+.verf-resultado.success {
+  background: rgba(58,224,122,0.1);
+  border: 1px solid rgba(58,224,122,0.3);
+}
+.verf-resultado.error {
+  background: rgba(245,82,80,0.1);
+  border: 1px solid rgba(245,82,80,0.3);
+}
+.verf-titulo { font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.verf-resultado.success .verf-titulo { color: var(--verde); }
+.verf-resultado.error   .verf-titulo { color: var(--rojo); }
+.verf-detalle { color: var(--texto-sub); font-size: 0.75rem; }
+
+/* ─── Inline loading ──────────────────────────────────── */
+.inline-loading {
+  display: flex; align-items: center; gap: 10px;
+  padding: 2rem 0;
 }
 
 /* ─── Splash / Onboarding ────────────────────────────── */
@@ -274,16 +574,29 @@
   background: var(--fondo);
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 16px;
+  gap: 20px;
   z-index: 9999;
+}
+.splash-icon {
+  width: 72px; height: 72px;
+  border-radius: 20px;
+  background: var(--verde);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 16px 40px -10px rgba(58,224,122,0.55);
+  animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 .splash-logo {
   font-family: var(--font-display);
-  font-size: 4rem; font-weight: 800;
+  font-size: 3.2rem; font-weight: 900;
   color: var(--verde);
-  letter-spacing: 0.05em;
-  text-shadow: 0 0 40px var(--verde-glow);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-shadow: 0 0 40px rgba(58,224,122,0.3);
+  animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.08s both;
 }
 .splash-sub {
-  font-size: 0.9rem; color: var(--texto-hint); text-align: center;
+  font-size: 0.88rem; color: var(--texto-hint);
+  text-align: center; font-weight: 600;
+  letter-spacing: 0.04em;
+  animation: fadeUp 0.5s ease 0.2s both;
 }
